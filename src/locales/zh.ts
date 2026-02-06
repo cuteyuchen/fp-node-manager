@@ -1,0 +1,89 @@
+export default {
+  common: {
+    add: '添加',
+    cancel: '取消',
+    save: '保存',
+    delete: '删除',
+    edit: '编辑',
+    confirm: '确认',
+    search: '搜索',
+    loading: '加载中...',
+    success: '成功',
+    error: '错误',
+    warning: '警告',
+    info: '提示',
+    inputPlaceholder: '请输入内容',
+    deleteConfirm: '确定要删除吗？'
+  },
+  sidebar: {
+    dashboard: '仪表盘',
+    nodes: 'Node 管理',
+    settings: '设置'
+  },
+  dashboard: {
+    title: '项目列表',
+    addProject: '添加项目',
+    noProjects: '暂无项目',
+    searchPlaceholder: '搜索项目...',
+    running: '运行中',
+    stopped: '已停止',
+    openInEditor: '在编辑器中打开',
+    openInExplorer: '在文件夹中打开',
+    start: '启动',
+    stop: '停止',
+    logs: '日志',
+    deleteProject: '删除项目',
+    deleteProjectConfirm: '确定要删除项目 "{name}" 吗？此操作无法撤销。',
+    selectScript: '请选择一个脚本以查看输出',
+    clickRunHint: '点击上方的运行按钮以启动脚本',
+    waitingForOutput: '等待输出...'
+  },
+  nodes: {
+    title: 'Node 版本管理',
+    addNode: '添加版本',
+    version: '版本',
+    path: '路径',
+    source: '来源',
+    action: '操作',
+    select: '选择',
+    current: '当前使用',
+    noNodes: '暂无 Node 版本'
+  },
+  settings: {
+    title: '设置',
+    general: '通用设置',
+    editorPath: '编辑器路径',
+    editorPathPlaceholder: '例如 code',
+    editorPathHint: '默认 "code" 适用于已配置环境变量的 VSCode。如未生效，请选择 Code.exe 的完整路径。',
+    defaultTerminal: '默认终端',
+    terminalHint: '脚本执行时的包装器。',
+    appearance: '外观设置',
+    language: '语言',
+    theme: '主题模式',
+    themeMode: {
+      dark: '深色',
+      light: '浅色',
+      system: '跟随系统'
+    },
+    data: '数据管理',
+    export: '导出数据',
+    import: '导入数据',
+    dataHint: '导出所有项目配置、设置和自定义 Node 版本。',
+    selectFile: '选择文件',
+    exportSuccess: '导出成功',
+    exportError: '导出失败',
+    importSuccess: '导入成功',
+    importError: '导入失败'
+  },
+  project: {
+    name: '项目名称',
+    path: '项目路径',
+    type: '项目类型',
+    nodeVersion: 'Node 版本',
+    packageManager: '包管理器',
+    scripts: '脚本',
+    addScript: '添加脚本',
+    selectFolder: '选择文件夹',
+    editProject: '编辑项目'
+  }
+}

@@ -3,7 +3,9 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import type { Project } from '../types';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const props = defineProps<{ 
     modelValue: boolean,
     editProject?: Project | null
@@ -17,14 +19,22 @@ const visible = computed({
 
 const isEdit = computed(() => !!props.editProject);
 
-const form = ref({
+const form = ref<{
+  id: string;
+  name: string;
+  path: string;
+  type: 'node' | 'static';
+  nodeVersion: string;
+  packageManager: 'npm' | 'yarn' | 'pnpm' | 'cnpm';
+  scripts: string[];
+}>({
   id: '',
   name: '',
   path: '',
-  type: 'node' as const,
+  type: 'node',
   nodeVersion: '',
-  packageManager: 'npm' as const,
-  scripts: [] as string[]
+  packageManager: 'npm',
+  scripts: []
 });
 
 const nodeVersions = ref<string[]>([]);
@@ -114,19 +124,19 @@ function submit() {
 <template>
   <el-dialog
     v-model="visible"
-    :title="isEdit ? '编辑项目' : '添加项目'"
+    :title="isEdit ? t('project.editProject') : t('dashboard.addProject')"
     width="500px"
     :close-on-click-modal="false"
     destroy-on-close
   >
     <el-form label-position="top" :model="form">
-        <el-form-item label="项目名称" required>
-            <el-input v-model="form.name" placeholder="请输入名称" />
+        <el-form-item :label="t('project.name')" required>
+            <el-input v-model="form.name" :placeholder="t('common.inputPlaceholder')" />
         </el-form-item>
         
-        <el-form-item label="项目文件夹" required>
+        <el-form-item :label="t('project.path')" required>
             <div class="flex gap-2 w-full">
-                <el-input v-model="form.path" placeholder="请选择文件夹" readonly>
+                <el-input v-model="form.path" :placeholder="t('project.selectFolder')" readonly>
                     <template #append>
                         <el-button @click="selectFolder">
                              <el-icon><div class="i-mdi-folder" /></el-icon>
@@ -138,24 +148,24 @@ function submit() {
 
         <el-row :gutter="20">
             <el-col :span="12">
-                <el-form-item label="类型">
+                <el-form-item :label="t('project.type')">
                     <el-select v-model="form.type">
-                        <el-option label="Node 服务" value="node" />
-                        <el-option label="静态站点" value="static" />
+                        <el-option label="Node" value="node" />
+                        <el-option label="Static" value="static" />
                     </el-select>
                 </el-form-item>
             </el-col>
             <el-col :span="12">
-                <el-form-item label="Node 版本">
+                <el-form-item :label="t('project.nodeVersion')">
                     <el-select v-model="form.nodeVersion">
-                        <el-option label="默认" value="" />
+                        <el-option :label="t('nodes.select')" value="" />
                         <el-option v-for="v in nodeVersions" :key="v" :label="v" :value="v" />
                     </el-select>
                 </el-form-item>
             </el-col>
         </el-row>
 
-        <el-form-item label="包管理器">
+        <el-form-item :label="t('project.packageManager')">
             <el-select v-model="form.packageManager">
                 <el-option label="npm" value="npm" />
                 <el-option label="yarn" value="yarn" />
@@ -167,9 +177,9 @@ function submit() {
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="visible = false">取消</el-button>
+        <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" @click="submit" :disabled="!form.name || !form.path" :loading="loading">
-          确定
+          {{ t('common.confirm') }}
         </el-button>
       </div>
     </template>

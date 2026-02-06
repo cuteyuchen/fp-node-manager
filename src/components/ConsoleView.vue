@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue';
 import { useProjectStore } from '../stores/project';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const projectStore = useProjectStore();
 const activeProject = computed(() =>
     projectStore.projects.find(p => p.id === projectStore.activeProjectId)
@@ -142,30 +144,32 @@ function handleCloseTab(script: string) {
 </script>
 
 <template>
-    <div class="h-full flex flex-col bg-[#0f172a] text-slate-300 relative overflow-hidden">
+    <div class="h-full flex flex-col bg-slate-50 dark:bg-[#0f172a] text-slate-700 dark:text-slate-300 relative overflow-hidden transition-colors duration-300">
         <!-- Header -->
         <div v-if="activeProject"
-            class="flex flex-col border-b border-slate-700/50 bg-[#1e293b]/50 backdrop-blur-sm z-10">
+            class="flex flex-col border-b border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-[#1e293b]/50 backdrop-blur-sm z-10">
             <div class="flex items-center justify-between p-4">
                 <div class="flex items-center gap-4">
-                    <h2 class="text-lg font-bold text-white tracking-tight">{{ activeProject.name }}</h2>
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">{{ activeProject.name }}</h2>
                 </div>
             </div>
 
             <!-- Tabs for outputs -->
             <div v-if="availableTabs.length > 0" class="flex px-4 gap-1 overflow-x-auto custom-scrollbar pt-2">
                 <div v-for="script in availableTabs" :key="script" @click="activeScript = script"
-                    class="group relative px-4 py-2 text-xs font-medium rounded-t-lg border-t border-x border-slate-700/50 transition-all cursor-pointer select-none flex items-center gap-2 min-w-[100px] justify-between"
-                    :class="activeScript === script ? 'bg-[#0f172a] text-blue-400 border-b-transparent z-10' : 'bg-slate-800/30 text-slate-500 hover:text-slate-300 border-b-slate-700/50 hover:bg-slate-800/50'">
+                    class="group relative px-4 py-2 text-xs font-medium rounded-t-lg border-t border-x transition-all cursor-pointer select-none flex items-center gap-2 min-w-[100px] justify-between"
+                    :class="activeScript === script 
+                        ? 'bg-slate-50 dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700/50 border-b-transparent z-10' 
+                        : 'bg-slate-200/50 dark:bg-slate-800/30 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-slate-200 dark:border-slate-700/50 hover:bg-slate-200/80 dark:hover:bg-slate-800/50 border-b-slate-200 dark:border-b-slate-700/50'">
                     <div class="flex items-center gap-2">
                         <span v-if="projectStore.runningStatus[`${activeProject.id}:${script}`]"
                             class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_rgba(16,185,129,0.5)]"></span>
-                        <span v-else class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                        <span v-else class="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-600"></span>
                         {{ script }}
                     </div>
 
                     <button @click.stop="handleCloseTab(script)"
-                        class="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-all">
+                        class="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-slate-300 dark:hover:bg-slate-700 rounded text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all">
                         <div class="i-mdi-close text-xs" />
                     </button>
                 </div>
@@ -174,26 +178,26 @@ function handleCloseTab(script: string) {
 
         <!-- Logs Control Bar (only if script selected) -->
         <div v-if="activeScript"
-            class="flex items-center justify-between px-4 py-2 bg-[#0f172a] border-b border-slate-800">
+            class="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800">
             <div class="text-xs text-slate-500 font-mono flex items-center gap-2">
                 <span>Console: {{ activeScript }}</span>
                 <span v-if="isRunning" class="text-emerald-500 flex items-center gap-1">
-                    <div class="i-mdi-loading animate-spin" /> Running
+                    <div class="i-mdi-loading animate-spin" /> {{ t('dashboard.running') }}
                 </span>
-                <span v-else class="text-slate-600">Stopped</span>
+                <span v-else class="text-slate-400 dark:text-slate-600">{{ t('dashboard.stopped') }}</span>
             </div>
             <div class="flex gap-2">
-                <button @click="handleClear" class="p-1 hover:bg-slate-700/50 rounded text-slate-400 transition-colors"
+                <button @click="handleClear" class="p-1 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                     title="Clear Logs">
                     <div class="i-mdi-delete-sweep text-base" />
                 </button>
                 <button v-if="isRunning" @click="handleStop"
-                    class="px-2 py-0.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded text-xs flex items-center gap-1 transition-all">
-                    <div class="i-mdi-stop text-xs" /> Stop
+                    class="px-2 py-0.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded text-xs flex items-center gap-1 transition-all">
+                    <div class="i-mdi-stop text-xs" /> {{ t('dashboard.stop') }}
                 </button>
                 <button v-else @click="handleRun(activeScript!)"
-                    class="px-2 py-0.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded text-xs flex items-center gap-1 transition-all">
-                    <div class="i-mdi-play text-xs" /> Rerun
+                    class="px-2 py-0.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded text-xs flex items-center gap-1 transition-all">
+                    <div class="i-mdi-play text-xs" /> {{ t('dashboard.start') }}
                 </button>
             </div>
         </div>
@@ -207,24 +211,24 @@ function handleCloseTab(script: string) {
                      we might want to render just visible ones or use a virtual scroller. 
                      For now, let's just ensure we don't re-render everything unnecessarily. -->
                 <div v-for="(line, i) in logs" :key="i"
-                    class="break-all border-l-2 border-transparent hover:border-slate-700 pl-2 -ml-2 hover:bg-slate-800/30 transition-colors py-0.5">
+                    class="break-all border-l-2 border-transparent hover:border-slate-300 dark:hover:border-slate-700 pl-2 -ml-2 hover:bg-slate-200/50 dark:hover:bg-slate-800/30 transition-colors py-0.5">
                     {{ line }}</div>
             </div>
 
             <div v-if="logs.length === 0"
-                class="h-full flex flex-col items-center justify-center text-slate-600 absolute inset-0 pointer-events-none">
+                class="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 absolute inset-0 pointer-events-none">
                 <div class="i-mdi-console-line text-6xl mb-4 opacity-20" />
-                <p>Ready to capture output...</p>
+                <p>{{ t('dashboard.waitingForOutput') }}</p>
             </div>
         </div>
 
         <!-- Empty State -->
-        <div v-else class="h-full flex flex-col items-center justify-center text-slate-500">
-            <div class="w-24 h-24 rounded-full bg-slate-800/50 flex items-center justify-center mb-6 shadow-inner">
+        <div v-else class="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+            <div class="w-24 h-24 rounded-full bg-slate-200/50 dark:bg-slate-800/50 flex items-center justify-center mb-6 shadow-inner">
                 <div class="i-mdi-monitor-dashboard text-5xl opacity-30" />
             </div>
-            <p class="text-lg font-medium text-slate-400">Select a script to view output</p>
-            <p class="text-sm opacity-50 mt-2">Click run buttons above to start scripts</p>
+            <p class="text-lg font-medium text-slate-600 dark:text-slate-400">{{ t('dashboard.selectScript') }}</p>
+            <p class="text-sm opacity-50 mt-2">{{ t('dashboard.clickRunHint') }}</p>
         </div>
     </div>
 </template>

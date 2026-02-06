@@ -36,12 +36,13 @@ watch(() => nodeStore.versions, triggerSave, { deep: true });
 </script>
 
 <template>
-  <div class="flex h-screen w-screen bg-[#0f172a] text-gray-100 font-sans overflow-hidden select-none">
+  <div
+    class="flex h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-gray-100 font-sans overflow-hidden select-none transition-colors duration-300">
     <Sidebar @navigate="v => currentView = v" />
     <main class="flex-1 h-full overflow-hidden relative">
       <!-- Modern deep gradient background -->
       <div
-        class="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] opacity-100 pointer-events-none" />
+        class="absolute inset-0 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 dark:from-[#0f172a] dark:via-[#1e293b] dark:to-[#0f172a] opacity-100 pointer-events-none transition-colors duration-300" />
       <!-- Subtle accent glow -->
       <div
         class="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none">
@@ -62,6 +63,9 @@ watch(() => nodeStore.versions, triggerSave, { deep: true });
 <style>
 :root {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+html.dark {
   color-scheme: dark;
   --el-bg-color: #1e293b !important;
   --el-bg-color-overlay: #1e293b !important;
@@ -79,7 +83,7 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background-color: #0f172a;
+  background-color: transparent;
 }
 
 /* Custom Scrollbar */
@@ -93,11 +97,19 @@ body,
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
 ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
 </style>

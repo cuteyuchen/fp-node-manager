@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, watch, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import type { NodeVersion } from '../types';
 

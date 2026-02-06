@@ -3,39 +3,41 @@ import { ref } from 'vue';
 import { useNodeStore } from '../stores/node';
 import AddNodeModal from '../components/AddNodeModal.vue';
 import { ElMessageBox, ElMessage } from 'element-plus';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const nodeStore = useNodeStore();
 const showAddModal = ref(false);
 
 function refresh() {
     nodeStore.loadNvmNodes();
-    ElMessage.success('已刷新 NVM 列表');
+    ElMessage.success(t('common.success'));
 }
 
 function handleRemove(path: string) {
     ElMessageBox.confirm(
-        '确定要移除这个自定义 Node 版本吗?',
-        '警告',
+        t('common.deleteConfirm'),
+        t('common.warning'),
         {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+          confirmButtonText: t('common.confirm'),
+          cancelButtonText: t('common.cancel'),
           type: 'warning',
         }
     ).then(() => {
         nodeStore.removeNode(path);
-        ElMessage.success('移除成功');
+        ElMessage.success(t('common.success'));
     });
 }
 
 function editDefault() {
-    ElMessageBox.prompt('请输入默认 Node 的路径 (例如 C:\\Program Files\\nodejs)', '编辑默认 Node', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+    ElMessageBox.prompt(t('common.inputPlaceholder'), t('common.edit'), {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
         inputValue: nodeStore.versions.find(v => v.source === 'system')?.path || '',
-    }).then((result) => {
+    }).then((result: any) => {
         const value = result?.value;
         nodeStore.updateSystemNode(value);
-        ElMessage.success('默认 Node 路径已更新');
+        ElMessage.success(t('common.success'));
     }).catch(() => {});
 }
 </script>
@@ -44,46 +46,44 @@ function editDefault() {
   <div class="p-8 h-full flex flex-col">
     <div class="flex justify-between items-center mb-8">
       <div>
-        <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-1">Node 版本管理</h1>
-        <p class="text-slate-400 text-sm">切换和管理 Node.js 环境</p>
+        <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-1">{{ t('nodes.title') }}</h1>
+        <p class="text-slate-400 text-sm">Manage Node.js environments</p>
       </div>
       <div class="flex gap-3">
         <el-button type="success" @click="showAddModal = true" class="!rounded-lg">
-             <el-icon class="mr-1"><div class="i-mdi-plus" /></el-icon> 手动添加
+             <el-icon class="mr-1"><div class="i-mdi-plus" /></el-icon> {{ t('nodes.addNode') }}
         </el-button>
         <el-button type="primary" @click="refresh" class="!rounded-lg">
-             <el-icon class="mr-1"><div class="i-mdi-refresh" /></el-icon> 从 NVM 获取
+             <el-icon class="mr-1"><div class="i-mdi-refresh" /></el-icon> Refresh NVM
         </el-button>
       </div>
     </div>
 
-    <div class="flex-1 bg-[#1e293b]/50 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden shadow-xl">
+    <div class="flex-1 bg-white/50 dark:bg-[#1e293b]/50 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700/50 overflow-hidden shadow-xl transition-colors duration-300">
         <el-table 
             :data="nodeStore.versions" 
             style="width: 100%" 
             height="100%"
-            :header-cell-style="{ background: '#1e293b', color: '#94a3b8', borderColor: '#334155' }"
-            :cell-style="{ background: 'transparent', borderColor: '#334155' }"
             :row-style="{ background: 'transparent' }"
         >
-            <el-table-column prop="version" label="版本号" width="180">
+            <el-table-column prop="version" :label="t('nodes.version')" width="180">
                 <template #default="{ row }">
-                    <span class="font-bold text-lg font-mono text-slate-200">{{ row.version }}</span>
+                    <span class="font-bold text-lg font-mono text-slate-800 dark:text-slate-200">{{ row.version }}</span>
                 </template>
             </el-table-column>
-            <el-table-column prop="source" label="来源" width="120">
+            <el-table-column prop="source" :label="t('nodes.source')" width="120">
                 <template #default="{ row }">
-                    <el-tag v-if="row.source === 'system'" type="info" effect="dark" class="!bg-slate-700/50 !border-slate-600">默认</el-tag>
-                    <el-tag v-else-if="row.source === 'nvm'" effect="dark" class="!bg-purple-500/20 !text-purple-300 !border-purple-500/30">NVM</el-tag>
-                    <el-tag v-else effect="dark" class="!bg-amber-500/20 !text-amber-300 !border-amber-500/30">自定义</el-tag>
+                    <el-tag v-if="row.source === 'system'" type="info" effect="light" class="!border-slate-300 dark:!bg-slate-700/50 dark:!border-slate-600 dark:text-white">System</el-tag>
+                    <el-tag v-else-if="row.source === 'nvm'" effect="light" class="!text-purple-600 !border-purple-300 dark:!bg-purple-500/20 dark:!text-purple-300 dark:!border-purple-500/30">NVM</el-tag>
+                    <el-tag v-else effect="light" class="!text-amber-600 !border-amber-300 dark:!bg-amber-500/20 dark:!text-amber-300 dark:!border-amber-500/30">Custom</el-tag>
                 </template>
             </el-table-column>
-            <el-table-column prop="path" label="路径" show-overflow-tooltip>
+            <el-table-column prop="path" :label="t('nodes.path')" show-overflow-tooltip>
                 <template #default="{ row }">
-                    <span class="text-slate-400 font-mono text-xs">{{ row.path }}</span>
+                    <span class="text-slate-500 dark:text-slate-400 font-mono text-xs">{{ row.path }}</span>
                 </template>
             </el-table-column>
-            <el-table-column label="操作" width="150" align="right">
+            <el-table-column :label="t('nodes.action')" width="150" align="right">
                 <template #default="{ row }">
                     <el-button 
                         v-if="row.source === 'custom'" 
@@ -92,7 +92,7 @@ function editDefault() {
                         plain
                         @click="handleRemove(row.path)"
                         class="!rounded-md"
-                    >移除</el-button>
+                    >{{ t('common.delete') }}</el-button>
                     <el-button 
                         v-if="row.source === 'system'" 
                         type="primary" 
@@ -100,7 +100,7 @@ function editDefault() {
                         plain
                         @click="editDefault"
                         class="!rounded-md"
-                    >编辑</el-button>
+                    >{{ t('common.edit') }}</el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -111,10 +111,23 @@ function editDefault() {
 </template>
 
 <style scoped>
+:deep(.el-table) {
+    --el-table-border-color: #e2e8f0;
+    --el-table-header-bg-color: #f8fafc;
+    --el-table-header-text-color: #475569;
+    --el-table-bg-color: transparent;
+    --el-table-tr-bg-color: transparent;
+}
+:global(html.dark) :deep(.el-table) {
+    --el-table-border-color: #334155;
+    --el-table-header-bg-color: #1e293b;
+    --el-table-header-text-color: #94a3b8;
+}
+
 :deep(.el-table__inner-wrapper::before) {
-    background-color: #334155 !important;
+    background-color: var(--el-table-border-color) !important;
 }
 :deep(.el-table__border-left-patch) {
-    background-color: #334155 !important;
+    background-color: var(--el-table-border-color) !important;
 }
 </style>

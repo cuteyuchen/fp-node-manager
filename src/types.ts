@@ -11,6 +11,8 @@ export interface Project {
 export interface Settings {
   editorPath: string; // e.g. "code" or absolute path
   defaultTerminal: 'cmd' | 'powershell' | 'git-bash';
+  locale: 'zh' | 'en';
+  themeMode: 'dark' | 'light' | 'auto';
 }
 
 export interface NodeVersion {

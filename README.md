@@ -1,44 +1,29 @@
 # Frontend Project Manager
 
-轻量级前端项目管理器，基于 Tauri v2 + Vue 3 + Rust 开发。
+A modern, cross-platform desktop application for managing frontend projects and Node.js versions. Built with Tauri + Vue 3 + TypeScript.
 
-## 🛠️ 前置要求
+## Features
 
-1.  **安装 Rust**: 请访问 [rust-lang.org](https://www.rust-lang.org/tools/install) 下载 `rustup-init.exe` 并安装。
-2.  **安装 C++ 生成工具**: 安装 Visual Studio Build Tools (选中 "Desktop development with C++")。
-3.  **Node.js**: 确保已安装 Node.js 和 npm。
+- **Project Management**: Organize and access your frontend projects easily.
+- **Node Version Management**: Switch between Node.js versions per project (supports NVM).
+- **Script Runner**: Run `npm` scripts directly from the UI.
+- **Console View**: View logs in a clean, scrollable interface.
+- **Theme & i18n**: Customizable theme colors and multi-language support (English/Chinese).
 
-## 🚀 快速开始
+## Tech Stack
 
-1.  进入项目目录：
-    ```bash
-    cd frontend-manager
-    ```
+- **Core**: Tauri v2, Rust
+- **Frontend**: Vue 3, TypeScript, Vite
+- **UI**: Element Plus, Tailwind CSS (UnoCSS)
+- **State**: Pinia
 
-2.  安装依赖：
-    ```bash
-    npm install
-    # 补充安装必要的 UI 和 Tauri 插件依赖
-    npm install pinia
-    npm install -D unocss @iconify-json/mdi
-    npm install @tauri-apps/plugin-dialog
-    ```
+## Getting Started
 
-3.  启动开发环境：
-    ```bash
-    npm run tauri dev
-    ```
+1. Clone the repository.
+2. Install dependencies: `npm install`.
+3. Run development server: `npm run tauri dev`.
+4. Build for production: `npm run tauri build`.
 
-## 📦 功能特性
+## License
 
-*   **自动识别 Node 版本**: 自动读取 `NVM_HOME` 环境变量下的 Node 版本。
-*   **多版本并行运行**: 通过 Rust 进程注入技术，支持不同项目使用不同 Node 版本运行，互不干扰。
-*   **轻量级**: 使用系统原生 WebView2，体积小，启动快。
-*   **可视化管理**: 自动识别 `package.json` 脚本，一键运行。
-
-## 🏗️ 构建发布
-
-构建 Windows 安装包：
-```bash
-npm run tauri build
-```
+MIT

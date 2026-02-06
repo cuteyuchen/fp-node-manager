@@ -5,7 +5,9 @@ import { useNodeStore } from '../stores/node';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { ElMessage } from 'element-plus';
+import { useI18n } from 'vue-i18n';
 
+const { t } = useI18n();
 const settingsStore = useSettingsStore();
 const projectStore = useProjectStore();
 const nodeStore = useNodeStore();
@@ -44,11 +46,11 @@ async function exportData() {
                 customNodes: nodeStore.versions.filter(v => v.source === 'custom')
             };
             await writeTextFile(path, JSON.stringify(data, null, 2));
-            ElMessage.success('导出成功');
+            ElMessage.success(t('settings.exportSuccess'));
         }
     } catch (e) {
         console.error(e);
-        ElMessage.error(`导出失败: ${e}`);
+        ElMessage.error(`${t('settings.exportError')}: ${e}`);
     }
 }
 
@@ -77,70 +79,92 @@ async function importData() {
                     }
                 });
             }
-            ElMessage.success('导入成功');
+            ElMessage.success(t('settings.importSuccess'));
         }
     } catch (e) {
         console.error(e);
-        ElMessage.error(`导入失败: ${e}`);
+        ElMessage.error(`${t('settings.importError')}: ${e}`);
     }
 }
 </script>
 
 <template>
-  <div class="p-6 h-full flex flex-col">
-    <h1 class="text-2xl font-bold text-white mb-6">设置</h1>
+  <div class="p-6 h-full flex flex-col overflow-y-auto">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">{{ t('settings.title') }}</h1>
     
-    <div class="max-w-2xl space-y-6">
-        <el-card class="!bg-gray-800 !border-gray-700">
+    <div class="max-w-2xl space-y-6 pb-20">
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700">
             <template #header>
-                <div class="font-bold">通用设置</div>
+                <div class="font-bold">{{ t('settings.general') }}</div>
             </template>
             <el-form label-position="top">
-                <el-form-item label="编辑器路径">
+                <el-form-item :label="t('settings.editorPath')">
                     <div class="flex gap-2 w-full">
-                        <el-input v-model="settingsStore.settings.editorPath" placeholder="例如 code">
+                        <el-input v-model="settingsStore.settings.editorPath" :placeholder="t('settings.editorPathPlaceholder')">
                             <template #prepend>
                                 <el-icon><div class="i-mdi-console" /></el-icon>
                             </template>
                             <template #append>
-                                <el-button @click="selectEditor">选择文件</el-button>
+                                <el-button @click="selectEditor">{{ t('settings.selectFile') }}</el-button>
                             </template>
                         </el-input>
                     </div>
-                    <div class="text-xs text-gray-400 mt-1">
-                        默认 "code" 适用于已配置环境变量的 VSCode。如未生效，请选择 Code.exe 的完整路径。
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {{ t('settings.editorPathHint') }}
                     </div>
                 </el-form-item>
 
-                <el-form-item label="默认终端">
+                <el-form-item :label="t('settings.defaultTerminal')">
                     <el-select v-model="settingsStore.settings.defaultTerminal" class="w-full">
                         <el-option label="Command Prompt (cmd.exe)" value="cmd" />
                         <el-option label="PowerShell" value="powershell" />
                         <el-option label="Git Bash" value="git-bash" />
                     </el-select>
-                    <div class="text-xs text-gray-400 mt-1">
-                        脚本执行时的包装器。
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {{ t('settings.terminalHint') }}
                     </div>
                 </el-form-item>
             </el-form>
         </el-card>
 
-        <el-card class="!bg-gray-800 !border-gray-700">
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700">
             <template #header>
-                <div class="font-bold">数据管理</div>
+                <div class="font-bold">{{ t('settings.appearance') }}</div>
+            </template>
+            <el-form label-position="top">
+                <el-form-item :label="t('settings.language')">
+                    <el-select v-model="settingsStore.settings.locale" class="w-full">
+                        <el-option label="中文" value="zh" />
+                        <el-option label="English" value="en" />
+                    </el-select>
+                </el-form-item>
+
+                <el-form-item :label="t('settings.theme')">
+                    <el-select v-model="settingsStore.settings.themeMode" class="w-full">
+                        <el-option :label="t('settings.themeMode.dark')" value="dark" />
+                        <el-option :label="t('settings.themeMode.light')" value="light" />
+                        <el-option :label="t('settings.themeMode.system')" value="auto" />
+                    </el-select>
+                </el-form-item>
+            </el-form>
+        </el-card>
+
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700">
+            <template #header>
+                <div class="font-bold">{{ t('settings.data') }}</div>
             </template>
             <div class="flex gap-4">
                 <el-button type="primary" @click="exportData">
                     <el-icon class="mr-1"><div class="i-mdi-export" /></el-icon>
-                    导出数据
+                    {{ t('settings.export') }}
                 </el-button>
                 <el-button @click="importData">
                     <el-icon class="mr-1"><div class="i-mdi-import" /></el-icon>
-                    导入数据
+                    {{ t('settings.import') }}
                 </el-button>
             </div>
-            <div class="text-xs text-gray-400 mt-2">
-                导出所有项目配置、设置和自定义 Node 版本。
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                {{ t('settings.dataHint') }}
             </div>
         </el-card>
     </div>

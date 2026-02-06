@@ -1,0 +1,89 @@
+export default {
+  common: {
+    add: 'Add',
+    cancel: 'Cancel',
+    save: 'Save',
+    delete: 'Delete',
+    edit: 'Edit',
+    confirm: 'Confirm',
+    search: 'Search',
+    loading: 'Loading...',
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Info',
+    inputPlaceholder: 'Please enter content',
+    deleteConfirm: 'Are you sure you want to delete?'
+  },
+  sidebar: {
+    dashboard: 'Dashboard',
+    nodes: 'Node Manager',
+    settings: 'Settings'
+  },
+  dashboard: {
+    title: 'Projects',
+    addProject: 'Add Project',
+    noProjects: 'No projects found',
+    searchPlaceholder: 'Search projects...',
+    running: 'Running',
+    stopped: 'Stopped',
+    openInEditor: 'Open in Editor',
+    openInExplorer: 'Open in Explorer',
+    start: 'Start',
+    stop: 'Stop',
+    logs: 'Logs',
+    deleteProject: 'Delete Project',
+    deleteProjectConfirm: 'Are you sure you want to delete project "{name}"? This action cannot be undone.',
+    selectScript: 'Select a script to view output',
+    clickRunHint: 'Click run buttons above to start scripts',
+    waitingForOutput: 'Waiting for output...'
+  },
+  nodes: {
+    title: 'Node Version Manager',
+    addNode: 'Add Version',
+    version: 'Version',
+    path: 'Path',
+    source: 'Source',
+    action: 'Action',
+    select: 'Select',
+    current: 'Current',
+    noNodes: 'No Node versions found'
+  },
+  settings: {
+    title: 'Settings',
+    general: 'General Settings',
+    editorPath: 'Editor Path',
+    editorPathPlaceholder: 'e.g. code',
+    editorPathHint: 'Default "code" works if VSCode is in PATH. Otherwise select Code.exe path.',
+    defaultTerminal: 'Default Terminal',
+    terminalHint: 'Wrapper for script execution.',
+    appearance: 'Appearance Settings',
+    language: 'Language',
+    theme: 'Theme Mode',
+    themeMode: {
+      dark: 'Dark',
+      light: 'Light',
+      system: 'System'
+    },
+    data: 'Data Management',
+    export: 'Export Data',
+    import: 'Import Data',
+    dataHint: 'Export all project configurations, settings, and custom Node versions.',
+    selectFile: 'Select File',
+    exportSuccess: 'Export success',
+    exportError: 'Export failed',
+    importSuccess: 'Import success',
+    importError: 'Import failed'
+  },
+  project: {
+    name: 'Project Name',
+    path: 'Project Path',
+    type: 'Project Type',
+    nodeVersion: 'Node Version',
+    packageManager: 'Package Manager',
+    scripts: 'Scripts',
+    addScript: 'Add Script',
+    selectFolder: 'Select Folder',
+    editProject: 'Edit Project'
+  }
+}

@@ -36,7 +36,7 @@ export const useProjectStore = defineStore('project', () => {
 
   // Setup listeners
   listen<any>('project-output', (event) => {
-      const { id, type, data } = event.payload;
+      const { id, data } = event.payload;
       // Extract the script identifier from the ID if possible, but here id is usually project_id
       // We actually need to store logs per project_id, but running status per script?
       // Wait, the rust side receives "id" which is project.id.
