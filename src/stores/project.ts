@@ -68,6 +68,12 @@ export const useProjectStore = defineStore('project', () => {
     if (runningStatus.value[project.id]) return;
 
     const nodeStore = useNodeStore();
+    
+    // Ensure node versions are loaded
+    if (nodeStore.versions.length === 0) {
+        await nodeStore.loadNvmNodes();
+    }
+    
     let nodePath = '';
     
     // Find matching node version
@@ -89,6 +95,10 @@ export const useProjectStore = defineStore('project', () => {
         logs.value[project.id] = []; // Clear logs
         activeProjectId.value = project.id; // Auto select
         runningStatus.value[project.id] = true;
+        
+        // Log debug info
+        logs.value[project.id].push(`[Runner] Selected Node Version: ${project.nodeVersion || 'None'}`);
+        logs.value[project.id].push(`[Runner] Resolved Node Path: ${nodePath || 'System Default'}`);
         
         await invoke('run_project_command', {
             id: project.id,
