@@ -159,7 +159,7 @@ function handleCloseTab(script: string) {
                 <div v-for="script in availableTabs" :key="script" @click="activeScript = script"
                     class="group relative px-4 py-2 text-xs font-medium rounded-t-lg border-t border-x transition-all cursor-pointer select-none flex items-center gap-2 min-w-[100px] justify-between"
                     :class="activeScript === script 
-                        ? 'bg-slate-50 dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700/50 border-b-transparent z-10' 
+                        ? 'bg-slate-50 dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700/50 border-b-transparent z-10 shadow-sm' 
                         : 'bg-slate-200/50 dark:bg-slate-800/30 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-slate-200 dark:border-slate-700/50 hover:bg-slate-200/80 dark:hover:bg-slate-800/50 border-b-slate-200 dark:border-b-slate-700/50'">
                     <div class="flex items-center gap-2">
                         <span v-if="projectStore.runningStatus[`${activeProject.id}:${script}`]"
@@ -192,11 +192,11 @@ function handleCloseTab(script: string) {
                     <div class="i-mdi-delete-sweep text-base" />
                 </button>
                 <button v-if="isRunning" @click="handleStop"
-                    class="px-2 py-0.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded text-xs flex items-center gap-1 transition-all">
+                    class="px-2 py-0.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded text-xs flex items-center gap-1 transition-all cursor-pointer">
                     <div class="i-mdi-stop text-xs" /> {{ t('dashboard.stop') }}
                 </button>
                 <button v-else @click="handleRun(activeScript!)"
-                    class="px-2 py-0.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded text-xs flex items-center gap-1 transition-all">
+                    class="px-2 py-0.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded text-xs flex items-center gap-1 transition-all cursor-pointer">
                     <div class="i-mdi-play text-xs" /> {{ t('dashboard.start') }}
                 </button>
             </div>

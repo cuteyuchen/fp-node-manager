@@ -38,7 +38,7 @@ function openEditModal(project: Project) {
     <div class="w-72 flex flex-col border-r border-slate-200 dark:border-slate-700/30 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl z-20 shadow-2xl transition-colors duration-300">
         <div class="p-4 border-b border-slate-200 dark:border-slate-700/30 flex justify-between items-center bg-white/50 dark:bg-[#0f172a]/50">
             <h2 class="text-base font-bold text-slate-800 dark:text-slate-100 tracking-wide uppercase text-xs opacity-80 pl-2">{{ t('dashboard.title') }}</h2>
-            <button @click="openAddModal" class="p-1.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20 group">
+            <button @click="openAddModal" class="p-1.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20 group cursor-pointer">
                 <div class="i-mdi-plus text-lg group-hover:scale-110 transition-transform" />
             </button>
         </div>
@@ -53,7 +53,7 @@ function openEditModal(project: Project) {
              
              <div v-if="projectStore.projects.length === 0" class="text-center mt-20 text-slate-400 dark:text-slate-500">
                 <div class="i-mdi-folder-open-outline text-5xl mb-3 opacity-20 mx-auto" />
-                <p class="text-sm">{{ t('dashboard.noProjects') }}</p>
+                <p class="text-sm font-medium">{{ t('dashboard.noProjects') }}</p>
                 <p class="text-xs opacity-50 mt-1">{{ t('dashboard.addProject') }}</p>
              </div>
         </div>

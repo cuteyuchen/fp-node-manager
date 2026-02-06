@@ -93,7 +93,7 @@ async function importData() {
     <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">{{ t('settings.title') }}</h1>
     
     <div class="max-w-2xl space-y-6 pb-20">
-        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700">
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm">
             <template #header>
                 <div class="font-bold">{{ t('settings.general') }}</div>
             </template>
@@ -127,7 +127,7 @@ async function importData() {
             </el-form>
         </el-card>
 
-        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700">
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm">
             <template #header>
                 <div class="font-bold">{{ t('settings.appearance') }}</div>
             </template>
@@ -149,7 +149,7 @@ async function importData() {
             </el-form>
         </el-card>
 
-        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700">
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm">
             <template #header>
                 <div class="font-bold">{{ t('settings.data') }}</div>
             </template>

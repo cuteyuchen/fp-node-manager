@@ -65,6 +65,7 @@ function editDefault() {
             style="width: 100%" 
             height="100%"
             :row-style="{ background: 'transparent' }"
+            class="custom-table"
         >
             <el-table-column prop="version" :label="t('nodes.version')" width="180">
                 <template #default="{ row }">
@@ -129,5 +130,13 @@ function editDefault() {
 }
 :deep(.el-table__border-left-patch) {
     background-color: var(--el-table-border-color) !important;
+}
+
+/* Row hover effect */
+:deep(.el-table__body tr:hover > td) {
+    background-color: rgba(241, 245, 249, 0.5) !important;
+}
+:global(html.dark) :deep(.el-table__body tr:hover > td) {
+    background-color: rgba(30, 41, 59, 0.5) !important;
 }
 </style>

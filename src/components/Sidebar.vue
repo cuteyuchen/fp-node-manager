@@ -79,13 +79,15 @@ function handleSelect(key: string) {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05)) !important;
   color: #2563eb !important;
   /* blue-600 */
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  font-weight: 600;
 }
 
 :global(html.dark) :deep(.el-menu-item.is-active) {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)) !important;
   color: #60a5fa !important;
   /* blue-400 */
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
 }
 
 :deep(.el-icon) {

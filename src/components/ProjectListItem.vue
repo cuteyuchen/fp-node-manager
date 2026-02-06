@@ -70,8 +70,8 @@ async function openFolder() {
 
 <template>
     <div @click="handleClick"
-        class="p-4 rounded-xl cursor-pointer transition-all border group relative overflow-hidden mb-3" :class="isActive
-            ? 'bg-blue-600/10 border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
+        class="p-4 rounded-xl cursor-pointer transition-all duration-200 border group relative overflow-hidden mb-3 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-none" :class="isActive
+            ? 'bg-blue-50 dark:bg-blue-600/10 border-blue-200 dark:border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
             : 'bg-white/60 dark:bg-[#1e293b]/40 border-slate-200 dark:border-slate-800 hover:bg-white/90 dark:hover:bg-[#1e293b]/80 hover:border-slate-300 dark:hover:border-slate-700'">
         <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex gap-1">
             <button @click.stop="openEditor"
@@ -97,7 +97,7 @@ async function openFolder() {
         </div>
 
         <div class="flex justify-between items-center mb-1">
-            <h3 class="font-bold text-sm truncate pr-20" :class="isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'">{{
+            <h3 class="font-bold text-sm truncate pr-20" :class="isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'">{{
                 project.name }}</h3>
             <div class="flex-shrink-0">
                 <div v-if="isRunning"

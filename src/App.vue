@@ -37,7 +37,7 @@ watch(() => nodeStore.versions, triggerSave, { deep: true });
 
 <template>
   <div
-    class="flex h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-gray-100 font-sans overflow-hidden select-none transition-colors duration-300">
+    class="flex h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-gray-100 font-sans overflow-hidden select-none transition-colors duration-300 antialiased">
     <Sidebar @navigate="v => currentView = v" />
     <main class="flex-1 h-full overflow-hidden relative">
       <!-- Modern deep gradient background -->
