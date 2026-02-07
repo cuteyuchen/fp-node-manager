@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
+import { getVersion } from '@tauri-apps/api/app';
+import { invoke } from '@tauri-apps/api/core';
+import { ElMessageBox, ElMessage, ElLoading } from 'element-plus';
+import { useI18n } from 'vue-i18n';
 import Sidebar from './components/Sidebar.vue';
 import Dashboard from './views/Dashboard.vue';
 import Settings from './views/Settings.vue';
@@ -9,12 +13,65 @@ import { useProjectStore } from './stores/project';
 import { useSettingsStore } from './stores/settings';
 import { useNodeStore } from './stores/node';
 
+const { t } = useI18n();
 const currentView = ref<'dashboard' | 'settings' | 'nodes'>('dashboard');
 const loaded = ref(false);
+
+function compareVersions(v1: string, v2: string) {
+  const p1 = v1.split('.').map(Number);
+  const p2 = v2.split('.').map(Number);
+  for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+    const n1 = p1[i] || 0;
+    const n2 = p2[i] || 0;
+    if (n1 > n2) return 1;
+    if (n1 < n2) return -1;
+  }
+  return 0;
+}
+
+async function checkUpdate() {
+  try {
+    const response = await fetch('https://api.github.com/repos/cuteyuchen/frontend-project-manager/releases/latest');
+    if (!response.ok) return;
+    const data = await response.json();
+    const latestTag = data.tag_name; // e.g., "v0.1.1"
+    const remoteVersion = latestTag.replace(/^v/, '');
+    const localVersion = await getVersion();
+
+    if (compareVersions(remoteVersion, localVersion) > 0) {
+      ElMessageBox.confirm(
+        t('update.message', { version: latestTag }),
+        t('update.title'),
+        {
+          confirmButtonText: t('update.confirm'),
+          cancelButtonText: t('update.cancel'),
+          type: 'info',
+        }
+      ).then(async () => {
+        const loading = ElLoading.service({
+          lock: true,
+          text: t('update.downloading'),
+          background: 'rgba(0, 0, 0, 0.7)',
+        });
+
+        try {
+          const downloadUrl = `https://github.com/cuteyuchen/frontend-project-manager/releases/download/${latestTag}/frontend-manager.exe`;
+          await invoke('install_update', { url: downloadUrl });
+        } catch (error) {
+          loading.close();
+          ElMessage.error(t('update.error', { error }));
+        }
+      }).catch(() => { });
+    }
+  } catch (e) {
+    console.error('Failed to check for updates:', e);
+  }
+}
 
 onMounted(async () => {
   await loadData();
   loaded.value = true;
+  checkUpdate();
 });
 
 // Watch stores and save

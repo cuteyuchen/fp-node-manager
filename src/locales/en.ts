@@ -90,5 +90,13 @@ export default {
     addScript: 'Add Script',
     selectFolder: 'Select Folder',
     editProject: 'Edit Project'
+  },
+  update: {
+    title: 'Update Available',
+    message: 'New version available: {version}. Do you want to download and install?',
+    confirm: 'Update Now',
+    cancel: 'Later',
+    downloading: 'Downloading update... The app will close and installer will run automatically.',
+    error: 'Update failed: {error}'
   }
 }
