@@ -4,11 +4,31 @@ A modern, cross-platform desktop application for managing frontend projects and 
 
 ## Features
 
-- **Project Management**: Organize and access your frontend projects easily.
-- **Node Version Management**: Switch between Node.js versions per project (supports NVM).
-- **Script Runner**: Run `npm` scripts directly from the UI.
-- **Console View**: View logs in a clean, scrollable interface.
-- **Theme & i18n**: Customizable theme colors and multi-language support (English/Chinese).
+### Node Version Management
+
+Visualize your NVM versions. Install, uninstall, and switch Node.js versions with ease.
+![Node Management](docs/images/image-1.png)
+
+Set your system's default Node.js version with a single click. It automatically handles environment variables for you.
+![Set Default](docs/images/image-2.png)
+
+### Project Management
+
+Organize all your frontend projects in one place. Run scripts (`dev`, `build`, etc.) directly from the UI.
+![Project List](docs/images/image-3.png)
+
+Easily add projects by selecting their folder. The app automatically detects `package.json` scripts.
+![Add Project](docs/images/image-4.png)
+
+### Settings & Customization
+
+Customize your experience:
+
+- **Theme**: Dark / Light / System
+- **Language**: English / Chinese
+- **Editor**: Configure your preferred editor (e.g., VS Code) to open projects.
+- **Terminal**: Choose between CMD, PowerShell, or Git Bash.
+![Settings](docs/images/image-5.png)
 
 ## Tech Stack
 
