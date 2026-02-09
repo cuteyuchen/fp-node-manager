@@ -25,56 +25,50 @@ pub async fn install_node(version: String) -> Result<String, String> {
     // We add "& pause" so the window stays open regardless of success/failure
     // allowing the user to read the output/errors.
     let mut cmd = Command::new("cmd");
-    let command_str = format!("nvm install {} & pause", version);
+    let command_str = format!("title Installing Node {0} & echo Executing: nvm install {0} & nvm install {0} & pause", version);
     cmd.arg("/C").arg(&command_str);
     
     #[cfg(target_os = "windows")]
     cmd.creation_flags(CREATE_NEW_CONSOLE);
 
     // Use status() instead of output() to let stdout/stderr go to the new console window
-    let status = cmd.status().map_err(|e| e.to_string())?;
+    let _ = cmd.status().map_err(|e| e.to_string())?;
 
-    if status.success() {
-        Ok("Installation completed".to_string())
-    } else {
-        Err("Installation failed".to_string())
-    }
+    // We don't check status.success() because:
+    // 1. The command includes "& pause", so exit code might be pause's exit code
+    // 2. If user closes the window manually (clicking X), exit code will be non-zero even if install succeeded
+    // We rely on the frontend to verify if the version was actually added to the list.
+    Ok("Installation process finished".to_string())
 }
 
 #[command]
 pub async fn uninstall_node(version: String) -> Result<String, String> {
     let mut cmd = Command::new("cmd");
-    let command_str = format!("nvm uninstall {} || pause", version);
+    let command_str = format!("title Uninstalling Node {0} & echo Executing: nvm uninstall {0} & nvm uninstall {0} & pause", version);
     cmd.arg("/C").arg(&command_str);
     
     #[cfg(target_os = "windows")]
     cmd.creation_flags(CREATE_NEW_CONSOLE);
 
-    let status = cmd.status().map_err(|e| e.to_string())?;
+    let _ = cmd.status().map_err(|e| e.to_string())?;
 
-    if status.success() {
-        Ok("Uninstall completed".to_string())
-    } else {
-        Err("Uninstall failed".to_string())
-    }
+    // Same reason as install_node, ignore exit code
+    Ok("Uninstall process finished".to_string())
 }
 
 #[command]
 pub async fn use_node(version: String) -> Result<String, String> {
     let mut cmd = Command::new("cmd");
-    let command_str = format!("nvm use {} || pause", version);
+    let command_str = format!("title Switching to Node {0} & echo Executing: nvm use {0} & nvm use {0} & pause", version);
     cmd.arg("/C").arg(&command_str);
     
     #[cfg(target_os = "windows")]
     cmd.creation_flags(CREATE_NEW_CONSOLE);
 
-    let status = cmd.status().map_err(|e| e.to_string())?;
+    let _ = cmd.status().map_err(|e| e.to_string())?;
 
-    if status.success() {
-        Ok("Switch completed".to_string())
-    } else {
-        Err("Switch failed".to_string())
-    }
+    // Same reason as install_node, ignore exit code
+    Ok("Switch process finished".to_string())
 }
 
 #[command]

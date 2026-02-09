@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri-dev": "tauri dev",
+    "tauri-build": "tauri build",
     "bump": "node scripts/bump-version.cjs"
   },
   "dependencies": {

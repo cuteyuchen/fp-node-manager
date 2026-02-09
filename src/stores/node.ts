@@ -103,12 +103,18 @@ export const useNodeStore = defineStore('node', () => {
       loading.value = true;
       await invoke('install_node', { version });
       // After install attempt, reload list to see if it actually appeared
-      // We can't trust the exit code of 'cmd /C' fully because of the '|| pause' hack
-      const previousCount = versions.value.filter(v => v.source === 'nvm').length;
       await loadNvmNodes();
-      const newCount = versions.value.filter(v => v.source === 'nvm').length;
+      
+      // Check if version exists now
+      // Normalize version string to ensure consistent comparison (e.g. "v18.0.0" vs "18.0.0")
+      const normalize = (v: string) => v.toLowerCase().startsWith('v') ? v.toLowerCase() : 'v' + v.toLowerCase();
+      const targetVersion = normalize(version);
+      
+      const exists = versions.value.some(v => 
+        v.source === 'nvm' && normalize(v.version) === targetVersion
+      );
 
-      if (newCount <= previousCount) {
+      if (!exists) {
         throw new Error('Node version not found after installation. Please check the console window for errors.');
       }
       return true;
@@ -132,11 +138,14 @@ export const useNodeStore = defineStore('node', () => {
       await invoke('uninstall_node', { version });
 
       // Verification logic for uninstall
-      const previousCount = versions.value.filter(v => v.source === 'nvm').length;
       await loadNvmNodes();
-      const newCount = versions.value.filter(v => v.source === 'nvm').length;
+      
+      const normalize = (v: string) => v.toLowerCase().startsWith('v') ? v.toLowerCase() : 'v' + v.toLowerCase();
+      const targetVersion = normalize(version);
+      
+      const exists = versions.value.some(v => v.source === 'nvm' && normalize(v.version) === targetVersion);
 
-      if (newCount >= previousCount) {
+      if (exists) {
         throw new Error('Node version still exists after uninstallation. Please check the console window for errors.');
       }
       return true;

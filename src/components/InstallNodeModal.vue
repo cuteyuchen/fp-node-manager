@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useNodeStore } from '../stores/node';
 import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
@@ -21,10 +21,24 @@ const searchQuery = ref('');
 const currentPage = ref(1);
 const pageSize = ref(20);
 
+const updatePageSize = () => {
+  if (window.innerWidth < 1024) {
+    pageSize.value = 10;
+  } else {
+    pageSize.value = 20;
+  }
+};
+
 onMounted(async () => {
+  updatePageSize();
+  window.addEventListener('resize', updatePageSize);
   if (visible.value) {
     await fetchVersions();
   }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updatePageSize);
 });
 
 async function fetchVersions() {
@@ -42,12 +56,31 @@ async function fetchVersions() {
 }
 
 // Fetch when opened
-import { watch } from 'vue';
-watch(visible, (val) => {
-  if (val && versions.value.length === 0) {
-    fetchVersions();
+watch(visible, async (val) => {
+  if (val) {
+    // Refresh installed nodes status
+    await nodeStore.loadNvmNodes();
+    
+    if (versions.value.length === 0) {
+      fetchVersions();
+    }
   }
 });
+
+const installedVersions = computed(() => {
+  const set = new Set<string>();
+  nodeStore.versions.forEach(v => {
+    if (v.source === 'nvm') {
+      const ver = v.version.toLowerCase().startsWith('v') ? v.version : 'v' + v.version;
+      set.add(ver.toLowerCase());
+    }
+  });
+  return set;
+});
+
+function isInstalled(version: string) {
+  return installedVersions.value.has(version.toLowerCase());
+}
 
 const filteredVersions = computed(() => {
   let res = versions.value;
@@ -74,6 +107,11 @@ async function install(version: string) {
     installingVersion.value = version;
     await nodeStore.installNode(version);
     ElMessage.success(`Node ${version} installed successfully`);
+    // Do not close modal automatically, user might want to install more or verify
+    // But if we want to follow typical flow, maybe we keep it open.
+    // However, the original code closed it: visible.value = false;
+    // The user requirement "Update status after closing early" implies they might close it.
+    // If I keep it open, they can see the "Installed" tag appear.
     visible.value = false;
   } catch (e: any) {
     ElMessage.error(e.message || 'Installation failed');
@@ -84,7 +122,7 @@ async function install(version: string) {
 </script>
 
 <template>
-  <el-dialog v-model="visible" :title="t('nodes.installNode')" width="600px" destroy-on-close class="rounded-xl">
+  <el-dialog v-model="visible" :title="t('nodes.installNode')" width="600px" destroy-on-close class="rounded-xl" align-center>
     <div class="mb-4">
       <el-input v-model="searchQuery" :placeholder="t('common.search')" clearable>
         <template #prefix>
@@ -96,9 +134,9 @@ async function install(version: string) {
     </div>
 
     <div
-      class="h-[500px] flex flex-col border border-slate-200 dark:border-slate-700 rounded-md relative overflow-hidden"
+      class="flex flex-col border border-slate-200 dark:border-slate-700 rounded-md relative"
       v-loading="loading">
-      <el-table :data="paginatedVersions" style="width: 100%" size="small" class="flex-1"
+      <el-table :data="paginatedVersions" style="width: 100%" size="small" class="flex-1" max-height="450"
         :row-style="{ background: 'transparent' }">
         <el-table-column prop="version" label="Version" width="140">
           <template #default="{ row }">
@@ -118,7 +156,8 @@ async function install(version: string) {
         </el-table-column>
         <el-table-column align="right" width="100">
           <template #default="{ row }">
-            <el-button type="primary" link @click="install(row.version)" :loading="installingVersion === row.version"
+            <el-tag v-if="isInstalled(row.version)" type="info" size="small">Installed</el-tag>
+            <el-button v-else type="primary" link @click="install(row.version)" :loading="installingVersion === row.version"
               :disabled="!!installingVersion">
               Install
             </el-button>
