@@ -12,7 +12,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [windows-latest, macos-latest, macos-12, ubuntu-latest]
+        include:
+          - platform: windows-latest
+            args: ""
+          - platform: ubuntu-latest
+            args: ""
+          - platform: macos-latest
+            args: "--target aarch64-apple-darwin"
+            target: aarch64-apple-darwin
+          - platform: macos-latest
+            args: "--target x86_64-apple-darwin"
+            target: x86_64-apple-darwin
+
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -32,6 +43,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Install frontend dependencies
         run: npm install
@@ -40,9 +53,11 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MACOSX_DEPLOYMENT_TARGET: "10.15"
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Frontend Project Manager ${{ github.ref_name }}'
           body: 'See the assets to download this version and install.'
           draft: false
           prerelease: false
+          args: ${{ matrix.args }}
