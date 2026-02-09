@@ -44,6 +44,7 @@ pub fn run() {
             runner::stop_project_command,
             runner::open_in_editor,
             runner::open_folder,
+            runner::open_url,
             updater::install_update,
             read_config_file,
             write_config_file

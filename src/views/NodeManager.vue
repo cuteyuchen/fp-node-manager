@@ -95,7 +95,7 @@ function handleRemove(path: string, source: string, version?: string) {
         </div>
 
         <div
-            class="flex-1 bg-white/50 dark:bg-[#1e293b]/50 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700/50 overflow-hidden shadow-xl transition-colors duration-300">
+            class="flex-1 bg-white/50 dark:bg-[#1e293b]/50 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700/50 overflow-hidden shadow-xl transition-colors duration-300 min-h-0">
             <el-table :data="nodeStore.versions" style="width: 100%" height="100%"
                 :row-style="{ background: 'transparent' }" class="custom-table">
                 <el-table-column prop="version" :label="t('nodes.version')">

@@ -1,5 +1,6 @@
 export default {
   common: {
+    title: 'Frontend Project Manager',
     add: 'Add',
     refresh: 'Refresh',
     cancel: 'Cancel',

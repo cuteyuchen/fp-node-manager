@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, h } from 'vue';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { ElMessageBox, ElMessage, ElLoading } from 'element-plus';
@@ -8,6 +8,7 @@ import Sidebar from './components/Sidebar.vue';
 import Dashboard from './views/Dashboard.vue';
 import Settings from './views/Settings.vue';
 import NodeManager from './views/NodeManager.vue';
+import TitleBar from './components/TitleBar.vue';
 import { loadData, saveData } from './utils/persistence';
 import { useProjectStore } from './stores/project';
 import { useSettingsStore } from './stores/settings';
@@ -40,7 +41,18 @@ async function checkUpdate() {
 
     if (compareVersions(remoteVersion, localVersion) > 0) {
       ElMessageBox.confirm(
-        t('update.message', { version: latestTag }),
+        h('div', null, [
+          h('p', null, t('update.message', { version: latestTag })),
+          h('div', { class: 'mt-2' }, [
+            h('a', {
+              class: 'text-blue-500 hover:text-blue-600 cursor-pointer underline',
+              onClick: (e: Event) => {
+                e.preventDefault();
+                invoke('open_url', { url: 'https://github.com/cuteyuchen/frontend-project-manager/releases' });
+              }
+            }, 'Open Download Page')
+          ])
+        ]),
         t('update.title'),
         {
           confirmButtonText: t('update.confirm'),
@@ -100,8 +112,9 @@ watch(() => nodeStore.versions, triggerSave, { deep: true });
 </script>
 
 <template>
+  <TitleBar />
   <div
-    class="flex h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-gray-100 font-sans overflow-hidden select-none transition-colors duration-300 antialiased">
+    class="flex h-screen w-screen bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-gray-100 font-sans overflow-hidden select-none transition-colors duration-300 antialiased pt-8">
     <Sidebar @navigate="v => currentView = v" />
     <main class="flex-1 h-full overflow-hidden relative">
       <!-- Modern deep gradient background -->

@@ -15,7 +15,7 @@ function handleSelect(key: string) {
 
 <template>
   <el-menu :default-active="activeIndex"
-    class="h-full border-r-0 !bg-white/80 dark:!bg-[#0f172a]/80 backdrop-blur-md transition-colors duration-300"
+    class="sidebar-menu h-full border-r-0 !bg-white/80 dark:!bg-[#0f172a]/80 backdrop-blur-md transition-colors duration-300"
     :collapse="true" @select="handleSelect">
     <div class="h-4"></div> <!-- Top spacing -->
 
@@ -44,6 +44,16 @@ function handleSelect(key: string) {
 </template>
 
 <style scoped>
+.sidebar-menu {
+  --item-hover-bg: #f1f5f9;
+  --item-hover-text: #0f172a;
+}
+
+:global(html.dark) .sidebar-menu {
+  --item-hover-bg: rgba(30, 41, 59, 0.5); /* slate-800/50 */
+  --item-hover-text: #f1f5f9;
+}
+
 :deep(.el-menu-item) {
   display: flex;
   justify-content: center;
@@ -62,15 +72,12 @@ function handleSelect(key: string) {
 }
 
 :deep(.el-menu-item:hover) {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
+  background-color: var(--item-hover-bg) !important;
+  color: var(--item-hover-text) !important;
   transform: translateX(4px);
 }
 
-:global(html.dark) :deep(.el-menu-item:hover) {
-  background-color: rgba(51, 65, 85, 0.5) !important;
-  color: #f1f5f9 !important;
-}
+/* Removed duplicate :global(html.dark) :deep(.el-menu-item:hover) block as it is handled by CSS variables */
 
 :deep(.el-menu-item.is-active) {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05)) !important;

@@ -1,0 +1,118 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+const isPinned = ref(false);
+const isMaximized = ref(false);
+const appWindow = getCurrentWindow();
+let unlistenResize: (() => void) | null = null;
+
+async function checkMaximized() {
+  try {
+    isMaximized.value = await appWindow.isMaximized();
+  } catch (error) {
+    console.error('Failed to check maximized state:', error);
+  }
+}
+
+async function togglePin() {
+  try {
+    isPinned.value = !isPinned.value;
+    await appWindow.setAlwaysOnTop(isPinned.value);
+  } catch (error) {
+    console.error('Failed to toggle pin:', error);
+    isPinned.value = !isPinned.value; // Revert state on error
+  }
+}
+
+async function minimize() {
+  try {
+    await appWindow.minimize();
+  } catch (error) {
+    console.error('Failed to minimize:', error);
+  }
+}
+
+async function toggleMaximize() {
+  try {
+    // Manually check and toggle to ensure reliability
+    const current = await appWindow.isMaximized();
+    if (current) {
+      await appWindow.unmaximize();
+    } else {
+      await appWindow.maximize();
+    }
+    // Update state immediately
+    isMaximized.value = !current;
+  } catch (error) {
+    console.error('Failed to maximize:', error);
+  }
+}
+
+async function close() {
+  try {
+    await appWindow.close();
+  } catch (error) {
+    console.error('Failed to close:', error);
+  }
+}
+
+onMounted(async () => {
+  await checkMaximized();
+  // Listen for resize events to update the maximize state icon
+  try {
+    unlistenResize = await appWindow.listen('tauri://resize', () => {
+      checkMaximized();
+    });
+  } catch (e) {
+    console.error('Failed to setup resize listener:', e);
+  }
+});
+
+onUnmounted(() => {
+  if (unlistenResize) {
+    unlistenResize();
+  }
+});
+</script>
+
+<template>
+  <div class="h-8 bg-white dark:bg-[#0f172a] flex items-center select-none fixed top-0 left-0 right-0 z-50 transition-colors duration-300 border-b border-gray-200 dark:border-none">
+    <!-- Expanded drag region -->
+    <div data-tauri-drag-region class="flex-1 h-full flex items-center pl-4 cursor-default">
+      <span class="text-xs text-gray-600 dark:text-gray-400 pointer-events-none font-medium">{{ t('common.title') }}</span>
+    </div>
+    
+    <!-- Control buttons -->
+    <div class="flex h-full">
+      <div
+        class="w-10 h-full flex justify-center items-center hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+        @click.stop="togglePin" :class="{ '!text-blue-500 dark:!text-blue-400': isPinned }" title="Pin to top">
+        <div class="i-mdi-pin text-sm" :class="{ 'rotate-45': isPinned }" />
+      </div>
+      <div
+        class="w-10 h-full flex justify-center items-center hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+        @click.stop="minimize" title="Minimize">
+        <div class="i-mdi-minus text-sm" />
+      </div>
+      <div
+        class="w-10 h-full flex justify-center items-center hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+        @click.stop="toggleMaximize" :title="isMaximized ? 'Restore' : 'Maximize'">
+        <div class="text-sm" :class="isMaximized ? 'i-mdi-window-restore' : 'i-mdi-window-maximize'" />
+      </div>
+      <div
+        class="w-10 h-full flex justify-center items-center hover:bg-red-500 dark:hover:bg-red-500 cursor-pointer text-gray-500 dark:text-gray-400 hover:text-white dark:hover:text-white transition-colors"
+        @click.stop="close" title="Close">
+        <div class="i-mdi-close text-sm" />
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.i-mdi-pin {
+  transition: transform 0.2s;
+}
+</style>

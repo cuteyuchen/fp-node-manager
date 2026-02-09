@@ -1,5 +1,6 @@
 export default {
   common: {
+    title: '前端项目管理工具',
     add: '添加',
     refresh: '刷新',
     cancel: '取消',
