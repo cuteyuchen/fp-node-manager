@@ -57,7 +57,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Frontend Project Manager ${{ github.ref_name }}'
-          body: 'See the assets to download this version and install.'
-          draft: false
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
