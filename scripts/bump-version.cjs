@@ -46,6 +46,19 @@ try {
         cargoToml = cargoToml.replace(cargoRegex, `version = "${newVersion}"`);
         fs.writeFileSync(cargoTomlPath, cargoToml);
         console.log(`✅ Updated src-tauri/Cargo.toml to ${newVersion}`);
+
+        // Update Cargo.lock by running cargo check or similar
+        // Or simply wait for the user to build?
+        // Actually, for consistency, we should try to update Cargo.lock if possible.
+        // Running `cargo check` inside src-tauri should trigger a lock file update.
+        try {
+            console.log('🔄 Updating Cargo.lock...');
+            execSync('cargo check', { stdio: 'inherit', cwd: path.join(rootDir, 'src-tauri') });
+            console.log('✅ Updated src-tauri/Cargo.lock');
+        } catch (e) {
+            console.warn('⚠️ Failed to update Cargo.lock automatically. You may need to run "cargo check" manually.');
+        }
+
     } else {
         console.warn('⚠️ Could not find version field in Cargo.toml');
     }
