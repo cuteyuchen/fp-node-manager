@@ -12,27 +12,48 @@ export const useProjectStore = defineStore('project', () => {
 
   // Load from local storage removed in favor of persistence.ts
   
+  // Log buffering mechanism to optimize rendering performance
+  const logBuffer: Record<string, string[]> = {};
+  let logFlushTimer: number | null = null;
+
+  function flushLogs() {
+    for (const id in logBuffer) {
+      if (logBuffer[id].length > 0) {
+        if (!logs.value[id]) logs.value[id] = [];
+        // Use spread to push multiple items at once, reducing reactivity triggers
+        logs.value[id].push(...logBuffer[id]);
+        
+        // Keep logs within limit (e.g., 2000 lines to allow scrolling back a bit, ConsoleView shows 500)
+        if (logs.value[id].length > 2000) {
+          logs.value[id] = logs.value[id].slice(-2000);
+        }
+        
+        logBuffer[id] = [];
+      }
+    }
+    logFlushTimer = null;
+  }
+
   // Setup listeners
   api.onProjectOutput(({ id, data }) => {
-      // Extract the script identifier from the ID if possible, but here id is usually project_id
-      // We actually need to store logs per project_id, but running status per script?
-      // Wait, the rust side receives "id" which is project.id.
-      // If we want multiple scripts per project, we need unique IDs for rust processes.
-      // Let's change the ID passed to rust to be `${project.id}:${script}`
-      
-      // But we need to handle legacy or parse it back.
-      // Actually, if we change the ID passed to invoke, we get events with that composite ID.
-      // So we should store logs keyed by that composite ID? 
-      // Or maybe we still want all logs for a project in one place?
-      // The user asked "Single project can run multiple commands simultaneously".
-      // So we need to distinguish them.
-      
-      if (!logs.value[id]) logs.value[id] = [];
-      logs.value[id].push(data);
+      if (!logBuffer[id]) logBuffer[id] = [];
+      logBuffer[id].push(data);
+
+      if (!logFlushTimer) {
+        // Use requestAnimationFrame for smooth UI updates, or setTimeout for throttling
+        // requestAnimationFrame might pause in background tabs, but that's usually fine
+        logFlushTimer = requestAnimationFrame(flushLogs);
+      }
   });
 
   api.onProjectExit(({ id }) => {
       runningStatus.value[id] = false;
+      // Ensure any buffered logs are flushed first
+      if (logBuffer[id] && logBuffer[id].length > 0) {
+         if (!logs.value[id]) logs.value[id] = [];
+         logs.value[id].push(...logBuffer[id]);
+         logBuffer[id] = [];
+      }
       if (!logs.value[id]) logs.value[id] = [];
       logs.value[id].push('[Process exited]');
   });
