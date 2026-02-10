@@ -115,7 +115,34 @@ async function checkUpdate() {
              downloadProgress.value = percentage;
           });
 
-          const downloadUrl = `https://github.com/cuteyuchen/frontend-project-manager/releases/download/${latestTag}/Frontend.Project.Manager_${latestTag.replace(/^v/, '')}_x64-setup.exe`;
+          const { os, arch } = await api.getPlatformInfo();
+          const versionNoV = latestTag.replace(/^v/, '');
+          let fileName = '';
+
+          if (os === 'windows') {
+            // Windows: fp-node-manager_0.1.10_x64-setup.exe
+            const archStr = arch === 'x86_64' ? 'x64' : arch;
+            fileName = `fp-node-manager_${versionNoV}_${archStr}-setup.exe`;
+          } else if (os === 'macos') {
+            // macOS: fp-node-manager_0.1.10_x64.dmg or aarch64.dmg
+            // Tauri bundle naming for mac usually uses target triple or just arch? 
+            // Standard tauri bundle is {productName}_{version}_{arch}.dmg
+            // x86_64 -> x64, aarch64 -> aarch64
+            const archStr = arch === 'x86_64' ? 'x64' : arch;
+            fileName = `fp-node-manager_${versionNoV}_${archStr}.dmg`;
+          } else if (os === 'linux') {
+            // Linux: fp-node-manager_0.1.10_amd64.AppImage
+            // x86_64 -> amd64
+            const archStr = arch === 'x86_64' ? 'amd64' : arch;
+            fileName = `fp-node-manager_${versionNoV}_${archStr}.AppImage`;
+          } else {
+             // Fallback or error? defaulting to windows x64 if unknown is risky.
+             // But for now let's assume one of these 3.
+             const archStr = arch === 'x86_64' ? 'x64' : arch;
+             fileName = `fp-node-manager_${versionNoV}_${archStr}-setup.exe`;
+          }
+
+          const downloadUrl = `https://github.com/cuteyuchen/fp-node-manager/releases/download/${latestTag}/${fileName}`;
           await api.installUpdate(downloadUrl);
         } catch (error: any) {
           if (error && error.toString().includes('cancelled')) {

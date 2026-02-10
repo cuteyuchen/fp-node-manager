@@ -104,6 +104,19 @@ export class UToolsAdapter implements PlatformAPI {
   }
 
   async isContextMenuSupported(): Promise<boolean> {
-      return false;
+      return Promise.resolve(false);
+  }
+
+  async getPlatformInfo(): Promise<{ os: string; arch: string }> {
+      // Fallback for uTools if service doesn't provide it
+      // Usually uTools runs on Electron, so we might check navigator
+      if (this.service.getPlatformInfo) {
+          return this.service.getPlatformInfo();
+      }
+      return Promise.resolve({
+          os: navigator.platform.toLowerCase().includes('win') ? 'windows' : 
+              navigator.platform.toLowerCase().includes('mac') ? 'macos' : 'linux',
+          arch: 'x86_64' // default fallback
+      });
   }
 }

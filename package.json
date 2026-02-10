@@ -1,6 +1,10 @@
 {
   "name": "fp-node-manager",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cuteyuchen/fp-node-manager.git"
+  },
   "version": "0.1.10",
   "type": "module",
   "scripts": {

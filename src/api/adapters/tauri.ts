@@ -172,4 +172,8 @@ export class TauriAdapter implements PlatformAPI {
     async isContextMenuSupported(): Promise<boolean> {
         return invoke('is_context_menu_supported');
     }
+
+    async getPlatformInfo(): Promise<{ os: string; arch: string }> {
+        return invoke('get_platform_info');
+    }
 }

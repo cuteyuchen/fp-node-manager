@@ -12,6 +12,20 @@ use std::io::Write;
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::PermissionsExt;
 
+#[derive(serde::Serialize)]
+pub struct PlatformInfo {
+    os: String,
+    arch: String,
+}
+
+#[tauri::command]
+pub fn get_platform_info() -> PlatformInfo {
+    PlatformInfo {
+        os: std::env::consts::OS.to_string(),
+        arch: std::env::consts::ARCH.to_string(),
+    }
+}
+
 fn get_exe_path() -> Result<PathBuf, String> {
     std::env::current_exe().map_err(|e| e.to_string())
 }
@@ -24,8 +38,8 @@ pub fn set_context_menu(enable: bool) -> Result<(), String> {
     let exe_str = exe_path.to_str().ok_or("Invalid path")?;
     
     let keys = vec![
-        r"Software\Classes\Directory\shell\FrontendProjectManager",
-        r"Software\Classes\Directory\Background\shell\FrontendProjectManager"
+        r"Software\Classes\Directory\shell\fp-node-manager",
+        r"Software\Classes\Directory\Background\shell\fp-node-manager"
     ];
     
     for key_path in keys {
@@ -47,7 +61,7 @@ pub fn set_context_menu(enable: bool) -> Result<(), String> {
 #[tauri::command]
 pub fn check_context_menu() -> bool {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let key_path = r"Software\Classes\Directory\shell\FrontendProjectManager";
+    let key_path = r"Software\Classes\Directory\shell\fp-node-manager";
     hkcu.open_subkey(key_path).is_ok()
 }
 
@@ -56,7 +70,7 @@ pub fn check_context_menu() -> bool {
 pub fn set_context_menu(enable: bool) -> Result<(), String> {
     let home = std::env::var("HOME").map_err(|_| "HOME not set")?;
     let applications_dir = std::path::Path::new(&home).join(".local/share/applications");
-    let desktop_file_path = applications_dir.join("frontend-project-manager-context.desktop");
+    let desktop_file_path = applications_dir.join("fp-node-manager-context.desktop");
 
     if enable {
         if !applications_dir.exists() {
@@ -111,7 +125,7 @@ pub fn check_context_menu() -> bool {
         Ok(h) => h,
         Err(_) => return false,
     };
-    let path = std::path::Path::new(&home).join(".local/share/applications/frontend-project-manager-context.desktop");
+    let path = std::path::Path::new(&home).join(".local/share/applications/fp-node-manager-context.desktop");
     path.exists()
 }
 

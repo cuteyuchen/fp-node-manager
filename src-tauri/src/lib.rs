@@ -59,6 +59,7 @@ pub fn run() {
             system::set_context_menu,
             system::check_context_menu,
             system::is_context_menu_supported,
+            system::get_platform_info,
             read_config_file,
             write_config_file,
             get_startup_args

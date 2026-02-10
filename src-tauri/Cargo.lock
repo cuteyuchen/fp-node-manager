@@ -986,7 +986,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "frontend-manager"
+name = "fp-node-manager"
 version = "0.1.10"
 dependencies = [
  "reqwest 0.12.28",

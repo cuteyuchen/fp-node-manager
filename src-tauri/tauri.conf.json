@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Frontend Project & Node Manager",
+  "productName": "fp-node-manager",
   "version": "0.1.10",
-  "identifier": "com.tauri-app.frontend-manager",
+  "identifier": "com.cuteyuchen.fp-node-manager",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

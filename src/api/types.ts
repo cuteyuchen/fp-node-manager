@@ -69,4 +69,5 @@ export interface PlatformAPI {
     setContextMenu(enable: boolean): Promise<void>;
     checkContextMenu(): Promise<boolean>;
     isContextMenuSupported(): Promise<boolean>;
+    getPlatformInfo(): Promise<{ os: string; arch: string }>;
 }
