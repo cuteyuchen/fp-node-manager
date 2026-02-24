@@ -2,6 +2,12 @@ use std::path::PathBuf;
 use std::process::Command;
 
 #[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+#[cfg(target_os = "windows")]
 use winreg::enums::*;
 #[cfg(target_os = "windows")]
 use winreg::RegKey;
@@ -23,7 +29,6 @@ pub struct PlatformInfo {
 pub struct TerminalInfo {
     id: String,
     name: String,
-    available: bool,
 }
 
 #[tauri::command]
@@ -45,6 +50,7 @@ fn check_command_exists(cmd: &str) -> bool {
     {
         Command::new("where")
             .arg(cmd)
+            .creation_flags(CREATE_NO_WINDOW)
             .output()
             .map(|output| output.status.success())
             .unwrap_or(false)
@@ -110,119 +116,135 @@ pub fn detect_available_terminals() -> Vec<TerminalInfo> {
         terminals.push(TerminalInfo {
             id: "cmd".to_string(),
             name: "Command Prompt (cmd.exe)".to_string(),
-            available: true,
         });
         
-        terminals.push(TerminalInfo {
-            id: "powershell".to_string(),
-            name: "PowerShell".to_string(),
-            available: check_command_exists("powershell"),
-        });
+        if check_command_exists("powershell") {
+            terminals.push(TerminalInfo {
+                id: "powershell".to_string(),
+                name: "PowerShell".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "pwsh".to_string(),
-            name: "PowerShell Core (pwsh)".to_string(),
-            available: check_command_exists("pwsh"),
-        });
+        if check_command_exists("pwsh") {
+            terminals.push(TerminalInfo {
+                id: "pwsh".to_string(),
+                name: "PowerShell Core (pwsh)".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "git-bash".to_string(),
-            name: "Git Bash".to_string(),
-            available: check_git_bash(),
-        });
+        if check_git_bash() {
+            terminals.push(TerminalInfo {
+                id: "git-bash".to_string(),
+                name: "Git Bash".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "windows-terminal".to_string(),
-            name: "Windows Terminal".to_string(),
-            available: check_windows_terminal(),
-        });
+        if check_windows_terminal() {
+            terminals.push(TerminalInfo {
+                id: "windows-terminal".to_string(),
+                name: "Windows Terminal".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "cmder".to_string(),
-            name: "Cmder".to_string(),
-            available: check_cmder(),
-        });
+        if check_cmder() {
+            terminals.push(TerminalInfo {
+                id: "cmder".to_string(),
+                name: "Cmder".to_string(),
+            });
+        }
     }
     
     #[cfg(target_os = "macos")]
     {
-        terminals.push(TerminalInfo {
-            id: "terminal".to_string(),
-            name: "Terminal.app".to_string(),
-            available: check_terminal_app(),
-        });
+        if check_terminal_app() {
+            terminals.push(TerminalInfo {
+                id: "terminal".to_string(),
+                name: "Terminal.app".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "iterm2".to_string(),
-            name: "iTerm2".to_string(),
-            available: check_iterm2(),
-        });
+        if check_iterm2() {
+            terminals.push(TerminalInfo {
+                id: "iterm2".to_string(),
+                name: "iTerm2".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "zsh".to_string(),
-            name: "Zsh".to_string(),
-            available: check_command_exists("zsh"),
-        });
+        if check_command_exists("zsh") {
+            terminals.push(TerminalInfo {
+                id: "zsh".to_string(),
+                name: "Zsh".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "bash".to_string(),
-            name: "Bash".to_string(),
-            available: check_command_exists("bash"),
-        });
+        if check_command_exists("bash") {
+            terminals.push(TerminalInfo {
+                id: "bash".to_string(),
+                name: "Bash".to_string(),
+            });
+        }
     }
     
     #[cfg(target_os = "linux")]
     {
-        terminals.push(TerminalInfo {
-            id: "bash".to_string(),
-            name: "Bash".to_string(),
-            available: check_command_exists("bash"),
-        });
+        if check_command_exists("bash") {
+            terminals.push(TerminalInfo {
+                id: "bash".to_string(),
+                name: "Bash".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "zsh".to_string(),
-            name: "Zsh".to_string(),
-            available: check_command_exists("zsh"),
-        });
+        if check_command_exists("zsh") {
+            terminals.push(TerminalInfo {
+                id: "zsh".to_string(),
+                name: "Zsh".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "gnome-terminal".to_string(),
-            name: "GNOME Terminal".to_string(),
-            available: check_command_exists("gnome-terminal"),
-        });
+        if check_command_exists("gnome-terminal") {
+            terminals.push(TerminalInfo {
+                id: "gnome-terminal".to_string(),
+                name: "GNOME Terminal".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "konsole".to_string(),
-            name: "Konsole (KDE)".to_string(),
-            available: check_command_exists("konsole"),
-        });
+        if check_command_exists("konsole") {
+            terminals.push(TerminalInfo {
+                id: "konsole".to_string(),
+                name: "Konsole (KDE)".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "xfce4-terminal".to_string(),
-            name: "XFCE Terminal".to_string(),
-            available: check_command_exists("xfce4-terminal"),
-        });
+        if check_command_exists("xfce4-terminal") {
+            terminals.push(TerminalInfo {
+                id: "xfce4-terminal".to_string(),
+                name: "XFCE Terminal".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "alacritty".to_string(),
-            name: "Alacritty".to_string(),
-            available: check_command_exists("alacritty"),
-        });
+        if check_command_exists("alacritty") {
+            terminals.push(TerminalInfo {
+                id: "alacritty".to_string(),
+                name: "Alacritty".to_string(),
+            });
+        }
         
-        terminals.push(TerminalInfo {
-            id: "kitty".to_string(),
-            name: "Kitty".to_string(),
-            available: check_command_exists("kitty"),
-        });
+        if check_command_exists("kitty") {
+            terminals.push(TerminalInfo {
+                id: "kitty".to_string(),
+                name: "Kitty".to_string(),
+            });
+        }
     }
     
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     {
-        terminals.push(TerminalInfo {
-            id: "bash".to_string(),
-            name: "Bash".to_string(),
-            available: check_command_exists("bash"),
-        });
+        if check_command_exists("bash") {
+            terminals.push(TerminalInfo {
+                id: "bash".to_string(),
+                name: "Bash".to_string(),
+            });
+        }
     }
     
     terminals

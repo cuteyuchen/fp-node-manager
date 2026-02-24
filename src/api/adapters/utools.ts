@@ -121,8 +121,11 @@ export class UToolsAdapter implements PlatformAPI {
   }
 
   async detectAvailableTerminals(): Promise<TerminalInfo[]> {
+      if (this.service.detectAvailableTerminals) {
+          return this.service.detectAvailableTerminals();
+      }
       return Promise.resolve([
-          { id: 'bash', name: 'Bash', available: true }
+          { id: 'cmd', name: 'Command Prompt (cmd.exe)' }
       ]);
   }
 }

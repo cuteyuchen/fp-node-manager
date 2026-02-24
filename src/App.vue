@@ -95,7 +95,7 @@ async function checkUpdate() {
                 e.preventDefault();
                 api.openUrl('https://github.com/cuteyuchen/fp-node-manager/releases');
               }
-            }, 'Open Download Page')
+            }, t('update.openDownloadPage'))
           ])
         ]),
         t('update.title'),

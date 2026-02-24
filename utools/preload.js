@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn, exec } = require('child_process');
+const { spawn, exec, execSync } = require('child_process');
 
 // Helper to run command and get output
 function runCmd(cmd) {
@@ -544,5 +544,154 @@ window.services = {
     windowClose: async () => { utools.outPlugin(); },
     windowIsMaximized: async () => true,
     windowSetAlwaysOnTop: async () => {},
-    onWindowResize: async () => () => {}
+    onWindowResize: async () => () => {},
+
+    //************* 终端检测 *************
+    detectAvailableTerminals: async () => {
+        const terminals = [];
+
+        // 检查命令是否存在
+        function checkCommandExists(cmd) {
+            try {
+                if (process.platform === 'win32') {
+                    execSync(`where ${cmd}`, { stdio: 'ignore' });
+                    return true;
+                } else {
+                    execSync(`which ${cmd}`, { stdio: 'ignore' });
+                    return true;
+                }
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Windows 平台
+        if (process.platform === 'win32') {
+            terminals.push({
+                id: 'cmd',
+                name: 'Command Prompt (cmd.exe)'
+            });
+
+            if (checkCommandExists('powershell')) {
+                terminals.push({
+                    id: 'powershell',
+                    name: 'PowerShell'
+                });
+            }
+
+            if (checkCommandExists('pwsh')) {
+                terminals.push({
+                    id: 'pwsh',
+                    name: 'PowerShell Core (pwsh)'
+                });
+            }
+
+            // 检查 Git Bash
+            const programFiles = process.env.ProgramFiles || '';
+            const programFilesX86 = process.env['ProgramFiles(x86)'] || '';
+            const gitBashPaths = [
+                path.join(programFiles, 'Git', 'bin', 'bash.exe'),
+                path.join(programFilesX86, 'Git', 'bin', 'bash.exe'),
+                'C:\\Program Files\\Git\\bin\\bash.exe',
+                'C:\\Program Files (x86)\\Git\\bin\\bash.exe'
+            ];
+            if (gitBashPaths.some(p => fs.existsSync(p)) || checkCommandExists('bash')) {
+                terminals.push({
+                    id: 'git-bash',
+                    name: 'Git Bash'
+                });
+            }
+
+            // 检查 Windows Terminal
+            const localAppData = process.env.LOCALAPPDATA || '';
+            const wtPath = path.join(localAppData, 'Microsoft', 'WindowsApps', 'wt.exe');
+            if (fs.existsSync(wtPath) || checkCommandExists('wt')) {
+                terminals.push({
+                    id: 'windows-terminal',
+                    name: 'Windows Terminal'
+                });
+            }
+
+            // 检查 Cmder
+            const cmderPaths = [
+                path.join(localAppData, 'Cmder', 'Cmder.exe'),
+                'C:\\Program Files\\Cmder\\Cmder.exe'
+            ];
+            if (cmderPaths.some(p => fs.existsSync(p))) {
+                terminals.push({
+                    id: 'cmder',
+                    name: 'Cmder'
+                });
+            }
+        }
+        // macOS 平台
+        else if (process.platform === 'darwin') {
+            if (fs.existsSync('/Applications/Utilities/Terminal.app') || fs.existsSync('/System/Applications/Utilities/Terminal.app')) {
+                terminals.push({
+                    id: 'terminal',
+                    name: 'Terminal.app'
+                });
+            }
+
+            if (fs.existsSync('/Applications/iTerm.app')) {
+                terminals.push({
+                    id: 'iterm2',
+                    name: 'iTerm2'
+                });
+            }
+
+            if (checkCommandExists('zsh')) {
+                terminals.push({
+                    id: 'zsh',
+                    name: 'Zsh'
+                });
+            }
+
+            if (checkCommandExists('bash')) {
+                terminals.push({
+                    id: 'bash',
+                    name: 'Bash'
+                });
+            }
+        }
+        // Linux 平台
+        else {
+            if (checkCommandExists('bash')) {
+                terminals.push({
+                    id: 'bash',
+                    name: 'Bash'
+                });
+            }
+
+            if (checkCommandExists('zsh')) {
+                terminals.push({
+                    id: 'zsh',
+                    name: 'Zsh'
+                });
+            }
+
+            if (checkCommandExists('gnome-terminal')) {
+                terminals.push({
+                    id: 'gnome-terminal',
+                    name: 'GNOME Terminal'
+                });
+            }
+
+            if (checkCommandExists('konsole')) {
+                terminals.push({
+                    id: 'konsole',
+                    name: 'Konsole (KDE)'
+                });
+            }
+
+            if (checkCommandExists('xfce4-terminal')) {
+                terminals.push({
+                    id: 'xfce4-terminal',
+                    name: 'XFCE Terminal'
+                });
+            }
+        }
+
+        return terminals;
+    }
 };

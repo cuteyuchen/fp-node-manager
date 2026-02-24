@@ -9,7 +9,6 @@ export interface ProjectInfo {
 export interface TerminalInfo {
     id: string;
     name: string;
-    available: boolean;
 }
 
 export interface PlatformAPI {

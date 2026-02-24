@@ -114,6 +114,7 @@ export default {
     downloading: '正在下载更新...',
     background: '后台下载',
     cancelled: '更新已取消',
-    error: '更新失败：{error}'
+    error: '更新失败：{error}',
+    openDownloadPage: '打开下载页面'
   }
 }

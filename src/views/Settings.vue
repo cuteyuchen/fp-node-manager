@@ -6,7 +6,6 @@ import { useNodeStore } from '../stores/node';
 import { api } from '../api';
 import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
-import type { TerminalInfo } from '../api/types';
 
 const { t } = useI18n();
 const settingsStore = useSettingsStore();
@@ -17,10 +16,22 @@ const target = import.meta.env.VITE_TARGET;
 const contextMenuEnabled = ref(false);
 const contextMenuSupported = ref(false);
 const autoLaunchEnabled = ref(false);
-const availableTerminals = ref<TerminalInfo[]>([]);
 
 onMounted(async () => {
     appVersion.value = await api.getAppVersion();
+    // Use cached terminals or empty first
+    if (settingsStore.availableTerminals.length > 0) {
+        // If already cached, no need to fetch immediately
+    } else {
+        // We can fetch on demand, or fetch here if we want to pre-populate but non-blocking?
+        // User requested: "Fetch when software runs AND when clicking dropdown".
+        // If we fetch here, it's "when opening settings", not "software runs".
+        // But let's respect "don't run every time settings opens".
+        // We will move the initial fetch to App.vue or store init, but for now, check if empty.
+        // Actually, let's just use the store's fetch which handles caching.
+        settingsStore.fetchAvailableTerminals();
+    }
+    
     if (target !== 'utools') {
         contextMenuSupported.value = await api.isContextMenuSupported();
         if (contextMenuSupported.value) {
@@ -28,7 +39,6 @@ onMounted(async () => {
         }
         const autostart = await import('@tauri-apps/plugin-autostart');
         autoLaunchEnabled.value = await autostart.isEnabled();
-        availableTerminals.value = await api.detectAvailableTerminals();
     }
 });
 
@@ -164,21 +174,16 @@ function openReleases() {
                 </el-form-item>
 
                 <el-form-item :label="t('settings.defaultTerminal')">
-                    <el-select v-model="settingsStore.settings.defaultTerminal" class="w-full">
+                    <el-select 
+                        v-model="settingsStore.settings.defaultTerminal" 
+                        class="w-full"
+                    >
                         <el-option 
-                            v-for="term in availableTerminals" 
+                            v-for="term in settingsStore.availableTerminals" 
                             :key="term.id" 
                             :label="term.name" 
                             :value="term.id"
-                            :disabled="!term.available"
-                        >
-                            <div class="flex items-center justify-between">
-                                <span>{{ term.name }}</span>
-                                <el-tag v-if="!term.available" size="small" type="info" effect="plain">
-                                    {{ t('settings.terminalNotInstalled') }}
-                                </el-tag>
-                            </div>
-                        </el-option>
+                        />
                     </el-select>
                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {{ t('settings.terminalHint') }}

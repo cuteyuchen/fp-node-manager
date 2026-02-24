@@ -114,6 +114,7 @@ export default {
     downloading: 'Downloading update...',
     background: 'Background',
     cancelled: 'Update cancelled',
-    error: 'Update failed: {error}'
+    error: 'Update failed: {error}',
+    openDownloadPage: 'Open Download Page'
   }
 }

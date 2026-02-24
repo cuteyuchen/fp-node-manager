@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import type { Settings } from '../types';
+import type { TerminalInfo } from '../api/types';
+import { api } from '../api';
 import i18n from '../i18n';
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -11,6 +13,25 @@ export const useSettingsStore = defineStore('settings', () => {
     themeMode: 'auto',
     autoUpdate: true
   });
+
+  const availableTerminals = ref<TerminalInfo[]>([]);
+
+  const fetchAvailableTerminals = async (force = false) => {
+    if (availableTerminals.value.length === 0 || force) {
+      try {
+        const terminals = await api.detectAvailableTerminals();
+        // Keep current selection if valid, or default to first
+        availableTerminals.value = terminals;
+      } catch (e) {
+        console.error('Failed to detect terminals:', e);
+      }
+    }
+    return availableTerminals.value;
+  };
+
+  // Initial fetch on app start (lazy)
+  // We don't want to block app start, so just call it
+  fetchAvailableTerminals();
 
   const stored = localStorage.getItem('settings');
   if (stored) {
@@ -67,6 +88,8 @@ export const useSettingsStore = defineStore('settings', () => {
   }, { deep: true });
 
   return {
-    settings
+    settings,
+    availableTerminals,
+    fetchAvailableTerminals
   };
 });
