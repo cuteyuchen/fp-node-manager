@@ -13,6 +13,7 @@ const nodeStore = useNodeStore();
 const showAddModal = ref(false);
 const showInstallModal = ref(false);
 const showSetDefaultModal = ref(false);
+const target = import.meta.env.VITE_TARGET;
 
 function openFolder(path: string) {
     api.openFolder(path).catch(err => {
@@ -65,9 +66,11 @@ function handleRemove(path: string, source: string, version?: string) {
     <div class="p-8 h-full flex flex-col">
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h1
-                    class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-1">
-                    {{ t('nodes.title') }}</h1>
+            <h1
+                :class="target === 'utools' 
+                    ? 'text-3xl font-bold text-purple-500 mb-1' 
+                    : 'text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-1'">
+                {{ t('nodes.title') }}</h1>
                 <p class="text-slate-400 text-sm">Manage Node.js environments</p>
             </div>
             <div class="grid grid-cols-2 gap-3 w-fit">
