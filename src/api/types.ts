@@ -6,6 +6,12 @@ export interface ProjectInfo {
     path: string;
 }
 
+export interface TerminalInfo {
+    id: string;
+    name: string;
+    available: boolean;
+}
+
 export interface PlatformAPI {
     // NVM
     getNvmList(): Promise<NodeVersion[]>;
@@ -66,8 +72,9 @@ export interface PlatformAPI {
     onWindowResize(callback: () => void): Promise<() => void>;
 
     // System Integration
-    setContextMenu(enable: boolean): Promise<void>;
+    setContextMenu(enable: boolean, locale?: string): Promise<void>;
     checkContextMenu(): Promise<boolean>;
     isContextMenuSupported(): Promise<boolean>;
     getPlatformInfo(): Promise<{ os: string; arch: string }>;
+    detectAvailableTerminals(): Promise<TerminalInfo[]>;
 }

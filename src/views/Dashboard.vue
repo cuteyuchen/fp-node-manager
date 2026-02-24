@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useProjectStore } from '../stores/project';
 import ProjectListItem from '../components/ProjectListItem.vue';
 import ConsoleView from '../components/ConsoleView.vue';
@@ -12,6 +12,20 @@ const projectStore = useProjectStore();
 const showModal = ref(false);
 const editingProject = ref<Project | null>(null);
 const refreshing = ref(false);
+
+//************* 搜索功能 *************
+const searchQuery = ref('');
+
+const filteredProjects = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  if (!query) {
+    return projectStore.projects;
+  }
+  return projectStore.projects.filter(project => 
+    project.name.toLowerCase().includes(query) ||
+    project.path.toLowerCase().includes(query)
+  );
+});
 
 function handleAdd(project: Project) {
   projectStore.addProject(project);
@@ -58,15 +72,35 @@ async function refreshProjects() {
             </div>
         </div>
         
+        <!-- 搜索框 -->
+        <div class="px-3 py-2 border-b border-slate-200 dark:border-slate-700/30">
+            <el-input
+                v-model="searchQuery"
+                :placeholder="t('dashboard.searchPlaceholder')"
+                clearable
+                class="w-full"
+            >
+                <template #prefix>
+                    <el-icon><div class="i-mdi-magnify" /></el-icon>
+                </template>
+            </el-input>
+        </div>
+        
         <div class="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2">
              <ProjectListItem 
-                v-for="project in projectStore.projects" 
+                v-for="project in filteredProjects" 
                 :key="project.id" 
                 :project="project" 
                 @edit="openEditModal(project)"
              />
              
-             <div v-if="projectStore.projects.length === 0" class="text-center mt-20 text-slate-400 dark:text-slate-500">
+             <div v-if="filteredProjects.length === 0 && projectStore.projects.length > 0" class="text-center mt-10 text-slate-400 dark:text-slate-500">
+                <div class="i-mdi-magnify text-4xl mb-3 opacity-20 mx-auto" />
+                <p class="text-sm font-medium">{{ t('common.search') }}</p>
+                <p class="text-xs opacity-50 mt-1">{{ t('dashboard.searchPlaceholder') }}</p>
+             </div>
+             
+             <div v-else-if="projectStore.projects.length === 0" class="text-center mt-20 text-slate-400 dark:text-slate-500">
                 <div class="i-mdi-folder-open-outline text-5xl mb-3 opacity-20 mx-auto" />
                 <p class="text-sm font-medium">{{ t('dashboard.noProjects') }}</p>
                 <p class="text-xs opacity-50 mt-1">{{ t('dashboard.addProject') }}</p>

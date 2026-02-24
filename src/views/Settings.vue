@@ -6,6 +6,7 @@ import { useNodeStore } from '../stores/node';
 import { api } from '../api';
 import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
+import type { TerminalInfo } from '../api/types';
 
 const { t } = useI18n();
 const settingsStore = useSettingsStore();
@@ -15,6 +16,8 @@ const appVersion = ref('');
 const target = import.meta.env.VITE_TARGET;
 const contextMenuEnabled = ref(false);
 const contextMenuSupported = ref(false);
+const autoLaunchEnabled = ref(false);
+const availableTerminals = ref<TerminalInfo[]>([]);
 
 onMounted(async () => {
     appVersion.value = await api.getAppVersion();
@@ -23,16 +26,34 @@ onMounted(async () => {
         if (contextMenuSupported.value) {
             contextMenuEnabled.value = await api.checkContextMenu();
         }
+        const autostart = await import('@tauri-apps/plugin-autostart');
+        autoLaunchEnabled.value = await autostart.isEnabled();
+        availableTerminals.value = await api.detectAvailableTerminals();
     }
 });
 
 async function toggleContextMenu(val: boolean) {
     try {
-        await api.setContextMenu(val);
+        await api.setContextMenu(val, settingsStore.settings.locale);
         ElMessage.success(val ? t('common.success') : t('common.success'));
     } catch (e) {
         ElMessage.error(t('common.error') + ': ' + e);
         contextMenuEnabled.value = !val; // revert
+    }
+}
+
+async function toggleAutoLaunch(val: boolean) {
+    try {
+        const autostart = await import('@tauri-apps/plugin-autostart');
+        if (val) {
+            await autostart.enable();
+        } else {
+            await autostart.disable();
+        }
+        ElMessage.success(t('common.success'));
+    } catch (e) {
+        ElMessage.error(t('common.error') + ': ' + e);
+        autoLaunchEnabled.value = !val; // revert
     }
 }
 
@@ -144,11 +165,20 @@ function openReleases() {
 
                 <el-form-item :label="t('settings.defaultTerminal')">
                     <el-select v-model="settingsStore.settings.defaultTerminal" class="w-full">
-                        <el-option label="Command Prompt (cmd.exe)" value="cmd" />
-                        <el-option label="PowerShell" value="powershell" />
-                        <el-option label="Git Bash" value="git-bash" />
-                        <el-option label="Zsh (macOS/Linux)" value="zsh" />
-                        <el-option label="Bash (Linux/macOS)" value="bash" />
+                        <el-option 
+                            v-for="term in availableTerminals" 
+                            :key="term.id" 
+                            :label="term.name" 
+                            :value="term.id"
+                            :disabled="!term.available"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span>{{ term.name }}</span>
+                                <el-tag v-if="!term.available" size="small" type="info" effect="plain">
+                                    {{ t('settings.terminalNotInstalled') }}
+                                </el-tag>
+                            </div>
+                        </el-option>
                     </el-select>
                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {{ t('settings.terminalHint') }}
@@ -159,6 +189,13 @@ function openReleases() {
                     <el-switch v-model="contextMenuEnabled" @change="toggleContextMenu" />
                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {{ t('settings.contextMenuHint') }}
+                    </div>
+                </el-form-item>
+
+                <el-form-item :label="t('settings.autoLaunch')" v-if="target !== 'utools'">
+                    <el-switch v-model="autoLaunchEnabled" @change="toggleAutoLaunch" />
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {{ t('settings.autoLaunchHint') }}
                     </div>
                 </el-form-item>
             </el-form>

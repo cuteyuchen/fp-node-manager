@@ -39,6 +39,10 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--flag1", "--flag2"])
+        ))
         .manage(runner::ProcessState::new())
         .manage(updater::UpdateState::new())
         .invoke_handler(tauri::generate_handler![
@@ -60,6 +64,7 @@ pub fn run() {
             system::check_context_menu,
             system::is_context_menu_supported,
             system::get_platform_info,
+            system::detect_available_terminals,
             read_config_file,
             write_config_file,
             get_startup_args

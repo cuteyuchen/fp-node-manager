@@ -10,16 +10,55 @@ const projectStore = useProjectStore();
 const ansiUp = new AnsiUp();
 
 function parseAnsi(text: string) {
-    const html = ansiUp.ansi_to_html(text);
-    // Match URLs but avoid matching HTML tags or attributes
-    const urlRegex = /(https?:\/\/[^\s<"']+)/g;
-    return html.replace(urlRegex, '<span class="log-link text-blue-400 hover:underline cursor-pointer" data-url="$1" title="Ctrl + Click to open">$1</span>');
+    const urlPlaceholders: { [key: string]: string } = {};
+    let placeholderIndex = 0;
+    
+    // Regex to match URL allowing ANSI codes inside
+    const urlRegex = /(https?:\/\/(?:[^\s\x1b]|(?:\x1b\[[0-9;]*[mK]))+)/g;
+    
+    let processedText = text.replace(urlRegex, (match) => {
+        let urlWithAnsi = match;
+        const trailingRegex = /([.,;!?'"\])])((\x1b\[[0-9;]*[mK])*)$/;
+        let finalUrl = urlWithAnsi;
+        let strippedSuffix = "";
+        
+        while (true) {
+             const m = finalUrl.match(trailingRegex);
+             if (m) {
+                 const punct = m[1];
+                 const ansi = m[2];
+                 strippedSuffix = punct + strippedSuffix;
+                 finalUrl = finalUrl.slice(0, -m[0].length) + ansi;
+             } else {
+                 break;
+             }
+        }
+
+        const placeholder = `__URL_PLACEHOLDER_${placeholderIndex++}__`;
+        urlPlaceholders[placeholder] = finalUrl;
+        return placeholder + strippedSuffix;
+    });
+    
+    const html = ansiUp.ansi_to_html(processedText);
+    
+    return html.replace(/__URL_PLACEHOLDER_(\d+)__/g, (match) => {
+        const urlWithAnsi = urlPlaceholders[match];
+        if (urlWithAnsi) {
+            const cleanUrl = urlWithAnsi.replace(/\x1b\[[0-9;]*[mK]/g, '');
+            const displayHtml = ansiUp.ansi_to_html(urlWithAnsi);
+            return `<span class="log-link text-blue-400 hover:underline cursor-pointer" data-url="${cleanUrl}" title="Ctrl + Click to open">${displayHtml}</span>`;
+        }
+        return match;
+    });
 }
 
 function handleLogClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
-    if (target.classList.contains('log-link')) {
-        const url = target.dataset.url;
+    // Find the closest log-link element, as the click might be on a nested span inside the link
+    const linkElement = target.closest('.log-link') as HTMLElement;
+    
+    if (linkElement) {
+        const url = linkElement.dataset.url;
         if (url && (event.ctrlKey || event.metaKey)) {
              api.openUrl(url);
         }

@@ -1,4 +1,4 @@
-import type { PlatformAPI, ProjectInfo } from '../types';
+import type { PlatformAPI, ProjectInfo, TerminalInfo } from '../types';
 import type { NodeVersion } from '../../types';
 
 // Declare global interface for uTools services
@@ -94,7 +94,7 @@ export class UToolsAdapter implements PlatformAPI {
   }
 
   // System Integration
-  async setContextMenu(): Promise<void> {
+  async setContextMenu(_enable: boolean, _locale?: string): Promise<void> {
       // Not supported in uTools
       return Promise.resolve();
   }
@@ -118,5 +118,11 @@ export class UToolsAdapter implements PlatformAPI {
               navigator.platform.toLowerCase().includes('mac') ? 'macos' : 'linux',
           arch: 'x86_64' // default fallback
       });
+  }
+
+  async detectAvailableTerminals(): Promise<TerminalInfo[]> {
+      return Promise.resolve([
+          { id: 'bash', name: 'Bash', available: true }
+      ]);
   }
 }

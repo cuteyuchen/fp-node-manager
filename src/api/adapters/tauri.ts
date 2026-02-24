@@ -4,7 +4,7 @@ import { getVersion } from '@tauri-apps/api/app';
 import { open as openDialogFn, save as saveDialogFn } from '@tauri-apps/plugin-dialog';
 import { openUrl as openUrlFn } from '@tauri-apps/plugin-opener';
 import { readTextFile as readTextFileFn, writeTextFile as writeTextFileFn } from '@tauri-apps/plugin-fs';
-import type { PlatformAPI, ProjectInfo } from '../types';
+import type { PlatformAPI, ProjectInfo, TerminalInfo } from '../types';
 import type { NodeVersion } from '../../types';
 
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -161,8 +161,8 @@ export class TauriAdapter implements PlatformAPI {
     }
 
     // System Integration
-    async setContextMenu(enable: boolean): Promise<void> {
-        return invoke('set_context_menu', { enable });
+    async setContextMenu(enable: boolean, locale?: string): Promise<void> {
+        return invoke('set_context_menu', { enable, locale: locale || 'en' });
     }
 
     async checkContextMenu(): Promise<boolean> {
@@ -175,5 +175,9 @@ export class TauriAdapter implements PlatformAPI {
 
     async getPlatformInfo(): Promise<{ os: string; arch: string }> {
         return invoke('get_platform_info');
+    }
+
+    async detectAvailableTerminals(): Promise<TerminalInfo[]> {
+        return invoke('detect_available_terminals');
     }
 }

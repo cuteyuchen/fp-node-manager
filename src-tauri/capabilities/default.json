@@ -24,6 +24,9 @@
     "fs:allow-download-read-recursive",
     "fs:allow-download-write-recursive",
     "fs:allow-desktop-read-recursive",
-    "fs:allow-desktop-write-recursive"
+    "fs:allow-desktop-write-recursive",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled"
   ]
 }
