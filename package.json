@@ -5,7 +5,7 @@
     "type": "git",
     "url": "https://github.com/cuteyuchen/fp-node-manager.git"
   },
-  "version": "0.1.10",
+  "version": "0.1.11",
   "type": "module",
   "scripts": {
     "dev": "vite",
