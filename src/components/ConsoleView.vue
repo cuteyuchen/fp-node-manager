@@ -181,13 +181,24 @@ function handleStop() {
 
 async function handleRestart() {
     if (activeProject.value && activeScript.value) {
-        await projectStore.stopProject(activeProject.value, activeScript.value);
-        // Wait a bit to ensure process is fully killed and ports released
-        setTimeout(() => {
-            if (activeProject.value && activeScript.value) {
-                projectStore.runProject(activeProject.value, activeScript.value);
+        const runId = `${activeProject.value.id}:${activeScript.value}`;
+        
+        // 如果已经在运行，先停止
+        if (projectStore.runningStatus[runId]) {
+            await projectStore.stopProject(activeProject.value, activeScript.value);
+            
+            // 等待进程真正退出
+            const maxWait = 5000;
+            const startTime = Date.now();
+            while (projectStore.runningStatus[runId] && (Date.now() - startTime) < maxWait) {
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
-        }, 1000);
+        }
+        
+        // 启动
+        if (activeProject.value && activeScript.value) {
+            projectStore.runProject(activeProject.value, activeScript.value);
+        }
     }
 }
 
@@ -232,8 +243,8 @@ function handleCloseTab(script: string) {
                 <div v-for="script in availableTabs" :key="script" @click="activeScript = script"
                     class="group relative px-4 py-2 text-xs font-medium rounded-t-lg border-t border-x transition-all cursor-pointer select-none flex items-center gap-2 min-w-[100px] justify-between"
                     :class="activeScript === script 
-                        ? 'bg-slate-50 dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700/50 border-b-transparent z-10 shadow-sm' 
-                        : 'bg-slate-200/50 dark:bg-slate-800/30 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-slate-200 dark:border-slate-700/50 hover:bg-slate-200/80 dark:hover:bg-slate-800/50 border-b-slate-200 dark:border-b-slate-700/50'">
+                        ? 'bg-slate-100/80 dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 border-slate-200 dark:border-slate-700/50 border-b-transparent z-10 shadow-sm' 
+                        : 'bg-white dark:bg-slate-800/30 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border-slate-200 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b-slate-200 dark:border-b-slate-700/50'">
                     <div class="flex items-center gap-2">
                         <span v-if="projectStore.runningStatus[`${activeProject.id}:${script}`]"
                             class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_rgba(16,185,129,0.5)]"></span>
