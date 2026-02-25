@@ -64,6 +64,7 @@ pub fn run() {
             nvm::uninstall_node,
             nvm::use_node,
             project::scan_project,
+            project::read_dir,
             runner::run_project_command,
             runner::stop_project_command,
             runner::open_in_editor,

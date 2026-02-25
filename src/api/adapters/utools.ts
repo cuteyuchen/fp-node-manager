@@ -41,6 +41,7 @@ export class UToolsAdapter implements PlatformAPI {
   writeConfigFile(filename: string, content: string): Promise<void> { return this.service.writeConfigFile(filename, content); }
   readTextFile(path: string): Promise<string> { return this.service.readTextFile(path); }
   writeTextFile(path: string, content: string): Promise<void> { return this.service.writeTextFile(path, content); }
+  readDir(path: string): Promise<{ name: string; isDirectory: boolean }[]> { return this.service.readDir(path); }
 
   installUpdate(url: string): Promise<void> { return this.service.installUpdate(url); }
   cancelUpdate(): Promise<void> { return this.service.cancelUpdate ? this.service.cancelUpdate() : Promise.resolve(); }

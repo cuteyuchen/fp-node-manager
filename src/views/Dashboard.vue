@@ -6,6 +6,8 @@ import ConsoleView from '../components/ConsoleView.vue';
 import AddProjectModal from '../components/AddProjectModal.vue';
 import type { Project } from '../types';
 import { useI18n } from 'vue-i18n';
+import { api } from '../api';
+import { ElMessage } from 'element-plus';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
@@ -54,6 +56,94 @@ async function refreshProjects() {
         refreshing.value = false;
     }
 }
+
+async function batchAddProjects() {
+    try {
+        const selected = await api.openDialog({
+            directory: true,
+            multiple: true,
+        });
+        
+        if (!selected) return;
+        
+        const paths = Array.isArray(selected) ? selected : [selected];
+        if (paths.length === 0) return;
+        
+        let addedCount = 0;
+        let skipCount = 0;
+        let failCount = 0;
+        
+        const pathsToScan: string[] = [];
+        
+        // First pass: determine which paths to scan
+        for (const path of paths) {
+            try {
+                // Try to scan the selected path directly
+                await api.scanProject(path);
+                pathsToScan.push(path);
+            } catch (e) {
+                // If it fails, it might be a parent directory. Let's check its subdirectories.
+                try {
+                    const entries = await api.readDir(path);
+                    for (const entry of entries) {
+                        if (entry.isDirectory) {
+                            const subPath = `${path}/${entry.name}`.replace(/\\/g, '/');
+                            try {
+                                await api.scanProject(subPath);
+                                pathsToScan.push(subPath);
+                            } catch (subE) {
+                                // Not a project, ignore
+                            }
+                        }
+                    }
+                } catch (dirE) {
+                    console.error(`Failed to read directory ${path}`, dirE);
+                    failCount++;
+                }
+            }
+        }
+        
+        // Second pass: add the valid projects
+        for (const path of pathsToScan) {
+            // Check if already exists
+            if (projectStore.projects.some(p => p.path === path)) {
+                skipCount++;
+                continue;
+            }
+            
+            try {
+                const info = await api.scanProject(path);
+                const project: Project = {
+                    id: crypto.randomUUID(),
+                    name: info.name || path.split(/[/\\]/).pop() || 'Unknown',
+                    path: path,
+                    type: 'node',
+                    nodeVersion: 'Default',
+                    packageManager: 'npm',
+                    scripts: info.scripts
+                };
+                projectStore.addProject(project);
+                addedCount++;
+            } catch (e) {
+                console.error(`Failed to scan project at ${path}`, e);
+                failCount++;
+            }
+        }
+        
+        if (addedCount > 0) {
+            ElMessage.success(`${t('common.success')}: ${addedCount} projects added`);
+        }
+        if (skipCount > 0) {
+            ElMessage.info(`${skipCount} projects skipped (already exist)`);
+        }
+        if (failCount > 0 && addedCount === 0) {
+            ElMessage.warning(`${failCount} folders failed to scan (maybe not a Node project)`);
+        }
+    } catch (err) {
+        console.error('Failed to batch add projects:', err);
+        ElMessage.error(t('common.error'));
+    }
+}
 </script>
 
 <template>
@@ -65,6 +155,9 @@ async function refreshProjects() {
             <div class="flex gap-2">
                 <button @click="refreshProjects" :disabled="refreshing" class="p-1.5 rounded-md bg-slate-500/10 text-slate-600 dark:text-slate-400 hover:bg-slate-500 hover:text-white transition-all border border-slate-500/20 group cursor-pointer disabled:opacity-50" :title="t('common.refresh') || 'Refresh'">
                     <div class="i-mdi-refresh text-lg transition-transform duration-700" :class="{ 'animate-spin': refreshing }" />
+                </button>
+                <button @click="batchAddProjects" class="p-1.5 rounded-md bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white transition-all border border-green-500/20 group cursor-pointer" :title="t('dashboard.batchAddProject')">
+                    <div class="i-mdi-folder-multiple-plus text-lg group-hover:scale-110 transition-transform" />
                 </button>
                 <button @click="openAddModal" class="p-1.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20 group cursor-pointer" :title="t('dashboard.addProject')">
                     <div class="i-mdi-plus text-lg group-hover:scale-110 transition-transform" />

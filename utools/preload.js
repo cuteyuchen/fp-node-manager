@@ -479,6 +479,14 @@ window.services = {
         fs.writeFileSync(path, content, 'utf-8');
     },
     
+    readDir: async (dirPath) => {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        return entries.map(e => ({
+            name: e.name,
+            isDirectory: e.isDirectory()
+        }));
+    },
+    
     openDialog: async (options) => {
         const electronOptions = {
             properties: []

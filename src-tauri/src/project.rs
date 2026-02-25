@@ -16,6 +16,32 @@ struct PackageJson {
     scripts: Option<std::collections::HashMap<String, String>>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct DirEntry {
+    name: String,
+    #[serde(rename = "isDirectory")]
+    is_directory: bool,
+}
+
+#[command]
+pub fn read_dir(path: String) -> Result<Vec<DirEntry>, String> {
+    let mut entries = Vec::new();
+    let dir = fs::read_dir(&path).map_err(|e| e.to_string())?;
+    
+    for entry in dir {
+        if let Ok(entry) = entry {
+            if let Ok(file_type) = entry.file_type() {
+                entries.push(DirEntry {
+                    name: entry.file_name().to_string_lossy().to_string(),
+                    is_directory: file_type.is_dir(),
+                });
+            }
+        }
+    }
+    
+    Ok(entries)
+}
+
 #[command]
 pub fn scan_project(path: String) -> Result<ProjectInfo, String> {
     let project_path = Path::new(&path);

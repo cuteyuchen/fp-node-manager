@@ -25,6 +25,7 @@ export default {
   dashboard: {
     title: '项目列表',
     addProject: '添加项目',
+    batchAddProject: '批量添加项目',
     noProjects: '暂无项目',
     searchPlaceholder: '搜索项目...',
     running: '运行中',

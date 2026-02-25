@@ -26,6 +26,7 @@ export default {
   dashboard: {
     title: 'Projects',
     addProject: 'Add Project',
+    batchAddProject: 'Batch Add Projects',
     noProjects: 'No projects found',
     searchPlaceholder: 'Search projects...',
     running: 'Running',

@@ -90,6 +90,10 @@ export class TauriAdapter implements PlatformAPI {
         return writeTextFileFn(path, content);
     }
 
+    async readDir(path: string): Promise<{ name: string; isDirectory: boolean }[]> {
+        return invoke('read_dir', { path });
+    }
+
     // Updater
     async installUpdate(url: string): Promise<void> {
         return invoke('install_update', { url });

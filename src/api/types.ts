@@ -37,6 +37,7 @@ export interface PlatformAPI {
     writeConfigFile(filename: string, content: string): Promise<void>;
     readTextFile(path: string): Promise<string>;
     writeTextFile(path: string, content: string): Promise<void>;
+    readDir(path: string): Promise<{ name: string; isDirectory: boolean }[]>;
 
     // Updater
     installUpdate(url: string): Promise<void>;
