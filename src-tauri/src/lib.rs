@@ -4,7 +4,7 @@ mod runner;
 mod updater;
 mod system;
 
-use tauri::Manager;
+use tauri::{Manager, Emitter};
 
 #[tauri::command]
 fn read_config_file(filename: String) -> Result<String, String> {
@@ -43,6 +43,17 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--flag1", "--flag2"])
         ))
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if args.len() > 1 {
+                let path = args[1].clone();
+                if !path.starts_with('-') {
+                    let _ = app.emit("single-instance-args", path);
+                }
+            }
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_focus();
+            }
+        }))
         .manage(runner::ProcessState::new())
         .manage(updater::UpdateState::new())
         .invoke_handler(tauri::generate_handler![

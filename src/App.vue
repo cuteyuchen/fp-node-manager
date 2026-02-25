@@ -25,6 +25,7 @@ const isDragging = ref(false);
 let unlistenDragEnter: UnlistenFn | null = null;
 let unlistenDragLeave: UnlistenFn | null = null;
 let unlistenDragDrop: UnlistenFn | null = null;
+let unlistenSingleInstance: UnlistenFn | null = null;
 
 const showUpdateProgress = ref(false);
 const downloadProgress = ref(0);
@@ -264,6 +265,14 @@ onMounted(async () => {
            }
         }
       });
+
+      // 监听单实例事件
+      unlistenSingleInstance = await listen<string>('single-instance-args', (event) => {
+        const path = event.payload;
+        if (path) {
+          handleImportProject(path);
+        }
+      });
     } catch (e) {
       console.error('Failed to setup drag listeners', e);
     }
@@ -279,6 +288,7 @@ onUnmounted(() => {
   if (unlistenDragEnter) unlistenDragEnter();
   if (unlistenDragLeave) unlistenDragLeave();
   if (unlistenDragDrop) unlistenDragDrop();
+  if (unlistenSingleInstance) unlistenSingleInstance();
 });
 
 // Watch stores and save

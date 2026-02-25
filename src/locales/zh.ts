@@ -104,7 +104,8 @@ export default {
     scripts: '脚本',
     addScript: '添加脚本',
     selectFolder: '选择文件夹',
-    editProject: '编辑项目'
+    editProject: '编辑项目',
+    alreadyExists: '项目已存在'
   },
   update: {
     title: '发现新版本',

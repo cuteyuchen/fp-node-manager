@@ -15,7 +15,8 @@ export default {
     warning: 'Warning',
     info: 'Info',
     inputPlaceholder: 'Please enter content',
-    deleteConfirm: 'Are you sure you want to delete?'
+    deleteConfirm: 'Are you sure you want to delete?',
+    alreadyExists: 'Project already exists'
   },
   sidebar: {
     dashboard: 'Dashboard',
