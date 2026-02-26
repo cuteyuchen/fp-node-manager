@@ -55,6 +55,15 @@ async function openEditor() {
     }
 }
 
+async function openTerminal() {
+    try {
+        await api.openInTerminal(props.project.path, settingsStore.settings.defaultTerminal);
+    } catch (e) {
+        console.error(e);
+        ElMessage.error(`${t('common.error')}: ${e}`);
+    }
+}
+
 async function openFolder() {
     try {
         await api.openFolder(props.project.path);
@@ -75,6 +84,11 @@ async function openFolder() {
                 class="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded hover:bg-slate-200 dark:hover:bg-slate-700/50"
                 :title="t('dashboard.openInEditor')">
                 <div class="i-mdi-code-tags text-sm" />
+            </button>
+            <button @click.stop="openTerminal"
+                class="p-1 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors rounded hover:bg-slate-200 dark:hover:bg-slate-700/50"
+                :title="t('dashboard.openInTerminal')">
+                <div class="i-mdi-console-line text-sm" />
             </button>
             <button @click.stop="openFolder"
                 class="p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors rounded hover:bg-slate-200 dark:hover:bg-slate-700/50"

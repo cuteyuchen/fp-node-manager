@@ -31,6 +31,7 @@ export interface PlatformAPI {
 
     // System / Shell
     openInEditor(path: string, editor?: string): Promise<void>;
+    openInTerminal(path: string, terminal?: string): Promise<void>;
     openFolder(path: string): Promise<void>;
     openUrl(url: string): Promise<void>;
 

@@ -35,6 +35,7 @@ export default {
     running: 'Running',
     stopped: 'Stopped',
     openInEditor: 'Open in Editor',
+    openInTerminal: 'Open in Terminal',
     openInExplorer: 'Open in Explorer',
     start: 'Start',
     restart: 'Restart',

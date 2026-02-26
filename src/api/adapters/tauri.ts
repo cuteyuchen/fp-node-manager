@@ -55,6 +55,10 @@ export class TauriAdapter implements PlatformAPI {
     async openInEditor(path: string, editor?: string): Promise<void> {
         return invoke('open_in_editor', { path, editor });
     }
+
+    async openInTerminal(path: string, terminal?: string): Promise<void> {
+        return invoke('open_in_terminal', { path, terminal: terminal || 'cmd' });
+    }
     
     async openFolder(path: string): Promise<void> {
         return invoke('open_folder', { path });

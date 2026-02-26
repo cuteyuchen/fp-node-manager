@@ -66,45 +66,9 @@ fn check_command_exists(cmd: &str) -> bool {
     }
 }
 
-#[cfg(target_os = "windows")]
-fn check_windows_terminal() -> bool {
-    let appdata = std::env::var("LOCALAPPDATA").unwrap_or_default();
-    let wt_path = format!(r"{}\Microsoft\WindowsApps\wt.exe", appdata);
-    std::path::Path::new(&wt_path).exists() || check_command_exists("wt")
-}
-
-#[cfg(target_os = "windows")]
-fn check_git_bash() -> bool {
-    let program_files = std::env::var("ProgramFiles").unwrap_or_default();
-    let program_files_x86 = std::env::var("ProgramFiles(x86)").unwrap_or_default();
-    
-    let git_bash_paths = vec![
-        format!(r"{}\Git\bin\bash.exe", program_files),
-        format!(r"{}\Git\bin\bash.exe", program_files_x86),
-        r"C:\Program Files\Git\bin\bash.exe".to_string(),
-        r"C:\Program Files (x86)\Git\bin\bash.exe".to_string(),
-    ];
-    
-    git_bash_paths.iter().any(|p| std::path::Path::new(p).exists()) || check_command_exists("bash")
-}
-
-#[cfg(target_os = "windows")]
-fn check_cmder() -> bool {
-    let cmder_paths = vec![
-        r"C:\cmder\Cmder.exe",
-        r"C:\tools\cmder\Cmder.exe",
-    ];
-    cmder_paths.iter().any(|p| std::path::Path::new(p).exists())
-}
-
 #[cfg(target_os = "macos")]
 fn check_terminal_app() -> bool {
     std::path::Path::new("/System/Applications/Utilities/Terminal.app").exists()
-}
-
-#[cfg(target_os = "macos")]
-fn check_iterm2() -> bool {
-    std::path::Path::new("/Applications/iTerm.app").exists()
 }
 
 #[tauri::command]
@@ -124,34 +88,6 @@ pub fn detect_available_terminals() -> Vec<TerminalInfo> {
                 name: "PowerShell".to_string(),
             });
         }
-        
-        if check_command_exists("pwsh") {
-            terminals.push(TerminalInfo {
-                id: "pwsh".to_string(),
-                name: "PowerShell Core (pwsh)".to_string(),
-            });
-        }
-        
-        if check_git_bash() {
-            terminals.push(TerminalInfo {
-                id: "git-bash".to_string(),
-                name: "Git Bash".to_string(),
-            });
-        }
-        
-        if check_windows_terminal() {
-            terminals.push(TerminalInfo {
-                id: "windows-terminal".to_string(),
-                name: "Windows Terminal".to_string(),
-            });
-        }
-        
-        if check_cmder() {
-            terminals.push(TerminalInfo {
-                id: "cmder".to_string(),
-                name: "Cmder".to_string(),
-            });
-        }
     }
     
     #[cfg(target_os = "macos")]
@@ -162,45 +98,10 @@ pub fn detect_available_terminals() -> Vec<TerminalInfo> {
                 name: "Terminal.app".to_string(),
             });
         }
-        
-        if check_iterm2() {
-            terminals.push(TerminalInfo {
-                id: "iterm2".to_string(),
-                name: "iTerm2".to_string(),
-            });
-        }
-        
-        if check_command_exists("zsh") {
-            terminals.push(TerminalInfo {
-                id: "zsh".to_string(),
-                name: "Zsh".to_string(),
-            });
-        }
-        
-        if check_command_exists("bash") {
-            terminals.push(TerminalInfo {
-                id: "bash".to_string(),
-                name: "Bash".to_string(),
-            });
-        }
     }
     
     #[cfg(target_os = "linux")]
     {
-        if check_command_exists("bash") {
-            terminals.push(TerminalInfo {
-                id: "bash".to_string(),
-                name: "Bash".to_string(),
-            });
-        }
-        
-        if check_command_exists("zsh") {
-            terminals.push(TerminalInfo {
-                id: "zsh".to_string(),
-                name: "Zsh".to_string(),
-            });
-        }
-        
         if check_command_exists("gnome-terminal") {
             terminals.push(TerminalInfo {
                 id: "gnome-terminal".to_string(),
@@ -219,20 +120,6 @@ pub fn detect_available_terminals() -> Vec<TerminalInfo> {
             terminals.push(TerminalInfo {
                 id: "xfce4-terminal".to_string(),
                 name: "XFCE Terminal".to_string(),
-            });
-        }
-        
-        if check_command_exists("alacritty") {
-            terminals.push(TerminalInfo {
-                id: "alacritty".to_string(),
-                name: "Alacritty".to_string(),
-            });
-        }
-        
-        if check_command_exists("kitty") {
-            terminals.push(TerminalInfo {
-                id: "kitty".to_string(),
-                name: "Kitty".to_string(),
             });
         }
     }

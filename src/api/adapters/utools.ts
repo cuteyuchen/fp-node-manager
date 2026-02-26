@@ -34,6 +34,12 @@ export class UToolsAdapter implements PlatformAPI {
   stopProjectCommand(id: string): Promise<void> { return this.service.stopProjectCommand(id); }
 
   openInEditor(path: string, editor?: string): Promise<void> { return this.service.openInEditor(path, editor); }
+    openInTerminal(path: string, terminal?: string): Promise<void> {
+        if ((this.service as any).openInTerminal) {
+            return (this.service as any).openInTerminal(path, terminal);
+        }
+        return this.service.openFolder(path);
+    }
   openFolder(path: string): Promise<void> { return this.service.openFolder(path); }
   openUrl(url: string): Promise<void> { return this.service.openUrl(url); }
 

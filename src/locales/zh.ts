@@ -34,6 +34,7 @@ export default {
     running: '运行中',
     stopped: '已停止',
     openInEditor: '在编辑器中打开',
+    openInTerminal: '在终端中打开',
     openInExplorer: '在文件夹中打开',
     start: '启动',
     restart: '重启',

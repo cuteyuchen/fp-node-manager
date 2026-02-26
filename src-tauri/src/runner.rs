@@ -510,6 +510,148 @@ pub fn open_in_editor(path: String, editor: String) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+fn get_git_bash_path() -> Option<String> {
+    let program_files = std::env::var("ProgramFiles").unwrap_or_default();
+    let program_files_x86 = std::env::var("ProgramFiles(x86)").unwrap_or_default();
+    let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
+
+    let paths = vec![
+        format!("{}\\Git\\git-bash.exe", program_files),
+        format!("{}\\Git\\git-bash.exe", program_files_x86),
+        format!("{}\\Programs\\Git\\git-bash.exe", local_app_data),
+    ];
+
+    for path in paths {
+        if std::path::Path::new(&path).exists() {
+            return Some(path);
+        }
+    }
+    None
+}
+
+#[tauri::command]
+pub fn open_in_terminal(path: String, terminal: String) -> Result<(), String> {
+    let terminal = terminal.trim().to_lowercase();
+
+    #[cfg(target_os = "windows")]
+    {
+        let win_path = path.replace('/', "\\");
+
+        match terminal.as_str() {
+            "powershell" => {
+                Command::new("cmd")
+                    .args(&["/C", "start", "/D", &win_path, "powershell", "-NoExit"])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            "pwsh" => {
+                Command::new("cmd")
+                    .args(&["/C", "start", "/D", &win_path, "pwsh", "-NoExit"])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            "windows-terminal" => {
+                Command::new("wt")
+                    .args(&["-d", &win_path])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            "git-bash" => {
+                if let Some(git_bash_path) = get_git_bash_path() {
+                     Command::new(git_bash_path)
+                         .arg(format!("--cd={}", win_path))
+                         .spawn()
+                         .map_err(|e| e.to_string())?;
+                } else {
+                     // Fallback: try to run bash in a new CMD window that stays open if bash fails
+                     Command::new("cmd")
+                        .args(&["/C", "start", "/D", &win_path, "cmd", "/K", "bash"])
+                        .spawn()
+                        .map_err(|e| e.to_string())?;
+                }
+            }
+            "cmder" => {
+                Command::new("cmd")
+                    .args(&["/C", "start", "/D", &win_path, "cmder"])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            _ => {
+                // CMD (Default)
+                // Use start /D to set directory, avoiding cd /d quote issues
+                Command::new("cmd")
+                    .args(&["/C", "start", "/D", &win_path, "cmd"])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        match terminal.as_str() {
+            "iterm2" => {
+                Command::new("open")
+                    .args(&["-a", "iTerm", &path])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            _ => {
+                Command::new("open")
+                    .args(&["-a", "Terminal", &path])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let shell_command = format!("cd '{}' ; exec bash", path.replace('\'', "'\\''"));
+        match terminal.as_str() {
+            "gnome-terminal" => {
+                Command::new("gnome-terminal")
+                    .args(&["--working-directory", &path])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            "konsole" => {
+                Command::new("konsole")
+                    .args(&["--workdir", &path])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            "xfce4-terminal" => {
+                Command::new("xfce4-terminal")
+                    .args(&["--working-directory", &path])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            "alacritty" => {
+                Command::new("alacritty")
+                    .args(&["--working-directory", &path])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            "kitty" => {
+                Command::new("kitty")
+                    .args(&["--directory", &path])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+            _ => {
+                Command::new("x-terminal-emulator")
+                    .args(&["-e", "bash", "-lc", &shell_command])
+                    .spawn()
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub fn open_folder(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
