@@ -109,7 +109,11 @@ export default {
     addScript: '添加脚本',
     selectFolder: '选择文件夹',
     editProject: '编辑项目',
-    alreadyExists: '项目已存在'
+    alreadyExists: '项目已存在',
+    invalidNvmrc: '.nvmrc 内容无效，已跳过自动安装',
+    autoInstallStart: '正在自动安装 Node {version}...',
+    autoInstallSuccess: 'Node {version} 自动安装完成',
+    autoInstallFailed: 'Node {version} 自动安装失败'
   },
   update: {
     title: '发现新版本',

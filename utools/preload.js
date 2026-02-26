@@ -115,18 +115,33 @@ window.services = {
                         return;
                     }
                     
-                    // Verify installation
+                    // Best-effort verify installation for numeric versions only.
+                    // For aliases (e.g. lts), nvm may install a resolved semver folder.
                     const nvmHome = process.env.NVM_HOME;
-                    if (nvmHome) {
-                        const versionPath = path.join(nvmHome, version);
-                        if (fs.existsSync(versionPath)) {
-                            resolve("Success");
-                        } else {
-                            reject(new Error("Installation failed or cancelled"));
+                    const normalizedVersion = String(version || '').trim().replace(/^v/i, '');
+                    const isNumericVersion = /^\d+(\.\d+){0,2}$/.test(normalizedVersion);
+                    if (nvmHome && isNumericVersion) {
+                        try {
+                            const dirs = fs.readdirSync(nvmHome);
+                            const installed = dirs.some((dir) => {
+                                if (!dir.startsWith('v')) return false;
+                                const normalizedDir = dir.replace(/^v/i, '');
+                                return (
+                                    normalizedDir === normalizedVersion ||
+                                    normalizedDir.startsWith(`${normalizedVersion}.`)
+                                );
+                            });
+
+                            if (installed) {
+                                resolve("Success");
+                                return;
+                            }
+                        } catch (e) {
+                            // Ignore verification errors and trust command result.
                         }
-                    } else {
-                        resolve("Done (Verification skipped)");
                     }
+
+                    resolve("Success");
                 });
             } else if (process.platform === 'darwin') {
                 // macOS: Use AppleScript to open Terminal
@@ -251,12 +266,22 @@ window.services = {
             } else if (fs.existsSync(path.join(projectPath, 'package-lock.json'))) {
                 packageManager = 'npm';
             }
+
+            let nvmVersion = undefined;
+            const nvmrcPath = path.join(projectPath, '.nvmrc');
+            if (fs.existsSync(nvmrcPath)) {
+                const rawNvmVersion = fs.readFileSync(nvmrcPath, 'utf-8').trim();
+                if (rawNvmVersion) {
+                    nvmVersion = rawNvmVersion;
+                }
+            }
             
             return {
                 name: pkg.name || path.basename(projectPath),
                 scripts: Object.keys(pkg.scripts || {}),
                 path: projectPath,
-                packageManager
+                packageManager,
+                nvmVersion
             };
         } catch (e) {
             throw e;

@@ -109,7 +109,11 @@ export default {
     scripts: 'Scripts',
     addScript: 'Add Script',
     selectFolder: 'Select Folder',
-    editProject: 'Edit Project'
+    editProject: 'Edit Project',
+    invalidNvmrc: 'Invalid .nvmrc content, auto install skipped',
+    autoInstallStart: 'Auto installing Node {version}...',
+    autoInstallSuccess: 'Node {version} installed automatically',
+    autoInstallFailed: 'Failed to auto install Node {version}'
   },
   update: {
     title: 'New Version Found',

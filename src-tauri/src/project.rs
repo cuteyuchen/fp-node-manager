@@ -10,6 +10,8 @@ pub struct ProjectInfo {
     path: String,
     #[serde(rename = "packageManager")]
     package_manager: Option<String>,
+    #[serde(rename = "nvmVersion")]
+    nvm_version: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -70,10 +72,22 @@ pub fn scan_project(path: String) -> Result<ProjectInfo, String> {
         package_manager = Some("npm".to_string());
     }
 
+    let mut nvm_version = None;
+    let nvmrc_path = project_path.join(".nvmrc");
+    if nvmrc_path.exists() {
+        if let Ok(content) = fs::read_to_string(nvmrc_path) {
+            let trimmed = content.trim();
+            if !trimmed.is_empty() {
+                nvm_version = Some(trimmed.to_string());
+            }
+        }
+    }
+
     Ok(ProjectInfo {
         name,
         scripts,
         path,
         package_manager,
+        nvm_version,
     })
 }
