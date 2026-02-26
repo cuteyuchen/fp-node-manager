@@ -4,6 +4,7 @@ export interface ProjectInfo {
     name: string;
     scripts: string[];
     path: string;
+    packageManager?: 'npm' | 'yarn' | 'pnpm' | 'cnpm';
 }
 
 export interface TerminalInfo {

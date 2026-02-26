@@ -8,6 +8,8 @@ pub struct ProjectInfo {
     name: String,
     scripts: Vec<String>,
     path: String,
+    #[serde(rename = "packageManager")]
+    package_manager: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -59,9 +61,19 @@ pub fn scan_project(path: String) -> Result<ProjectInfo, String> {
     
     let name = pkg.name.unwrap_or_else(|| project_path.file_name().unwrap().to_str().unwrap().to_string());
 
+    let mut package_manager = None;
+    if project_path.join("pnpm-lock.yaml").exists() {
+        package_manager = Some("pnpm".to_string());
+    } else if project_path.join("yarn.lock").exists() {
+        package_manager = Some("yarn".to_string());
+    } else if project_path.join("package-lock.json").exists() {
+        package_manager = Some("npm".to_string());
+    }
+
     Ok(ProjectInfo {
         name,
         scripts,
         path,
+        package_manager,
     })
 }

@@ -243,10 +243,20 @@ window.services = {
             const content = fs.readFileSync(pkgPath, 'utf-8');
             const pkg = JSON.parse(content);
             
+            let packageManager = undefined;
+            if (fs.existsSync(path.join(projectPath, 'pnpm-lock.yaml'))) {
+                packageManager = 'pnpm';
+            } else if (fs.existsSync(path.join(projectPath, 'yarn.lock'))) {
+                packageManager = 'yarn';
+            } else if (fs.existsSync(path.join(projectPath, 'package-lock.json'))) {
+                packageManager = 'npm';
+            }
+            
             return {
                 name: pkg.name || path.basename(projectPath),
                 scripts: Object.keys(pkg.scripts || {}),
-                path: projectPath
+                path: projectPath,
+                packageManager
             };
         } catch (e) {
             throw e;
@@ -343,27 +353,24 @@ window.services = {
         if (nodePath) {
             try {
                 // If it's a file (e.g. node.exe), get its directory
-                // We use statSync to check, but be careful if path doesn't exist
-                if (fs.existsSync(nodePath) && fs.statSync(nodePath).isFile()) {
-                    nodeDir = path.dirname(nodePath);
+                // We shouldn't rely on extension as it could be anything or nothing on linux
+                let checkPath = nodePath;
+                if (fs.existsSync(checkPath)) {
+                     const stat = fs.statSync(checkPath);
+                     if (stat.isFile()) {
+                         nodeDir = path.dirname(checkPath);
+                     } else {
+                         nodeDir = checkPath;
+                     }
                 } else {
-                    nodeDir = nodePath;
+                     // If path doesn't exist (maybe strict nodePath not full path?), assume it is a directory
+                     nodeDir = nodePath;
                 }
 
                 if (nodeDir) {
-                    if (process.platform === 'win32') {
-                        // Find existing PATH key (case insensitive on Windows)
-                        let pathKey = 'PATH';
-                        for (const key in env) {
-                            if (key.toUpperCase() === 'PATH') {
-                                pathKey = key;
-                                break;
-                            }
-                        }
-                        env[pathKey] = `${nodeDir};${env[pathKey] || ''}`;
-                    } else {
-                        env.PATH = `${nodeDir}:${env.PATH || ''}`;
-                    }
+                    const pathKey = Object.keys(env).find(k => k.toUpperCase() === 'PATH') || 'PATH';
+                    const separator = process.platform === 'win32' ? ';' : ':';
+                    env[pathKey] = `${nodeDir}${separator}${env[pathKey] || ''}`;
                 }
             } catch (e) {
                 console.error('[Runner] Error resolving node path:', e);
@@ -371,16 +378,17 @@ window.services = {
         }
 
         // Construct command
-        // On Windows, if we use shell: true, we can pass the command string directly.
-        // We avoid "set PATH=... && cmd" pattern to prevent syntax errors.
-        const cmdStr = `${packageManager} run "${script}"`;
-
-        console.log('[Runner] Executing:', cmdStr);
-        console.log('[Runner] Node Dir:', nodeDir);
-
-        appendLog(`Executing: ${cmdStr}\n`);
+        const pm = packageManager || 'npm';
+        const cmdStr = `${pm} run "${script}"`;
 
         try {
+            console.log('[Runner] Executing:', cmdStr);
+            console.log('[Runner] Node Dir:', nodeDir);
+            console.log('[Runner] Package Manager:', pm);
+
+            appendLog(`Executing: ${cmdStr}\n`);
+            appendLog(`Node Path used: ${nodeDir || 'System Default'}\n`);
+            
             const child = spawn(cmdStr, [], {
                 cwd: projectPath,
                 shell: true,

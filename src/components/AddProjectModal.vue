@@ -92,6 +92,10 @@ async function selectFolder() {
             form.value.name = info.name;
         }
         
+        if (info.packageManager) {
+            form.value.packageManager = info.packageManager;
+        }
+        
         form.value.scripts = info.scripts;
       } catch (e) {
         console.error('Failed to scan project', e);

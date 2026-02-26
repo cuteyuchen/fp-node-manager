@@ -119,7 +119,7 @@ async function batchAddProjects() {
                     path: path,
                     type: 'node',
                     nodeVersion: 'Default',
-                    packageManager: 'npm',
+                    packageManager: info.packageManager || 'npm',
                     scripts: info.scripts
                 };
                 projectStore.addProject(project);
@@ -131,13 +131,13 @@ async function batchAddProjects() {
         }
         
         if (addedCount > 0) {
-            ElMessage.success(`${t('common.success')}: ${addedCount} projects added`);
+            ElMessage.success(t('dashboard.batchAddSuccess', { count: addedCount }));
         }
         if (skipCount > 0) {
-            ElMessage.info(`${skipCount} projects skipped (already exist)`);
+            ElMessage.info(t('dashboard.batchAddSkip', { count: skipCount }));
         }
         if (failCount > 0 && addedCount === 0) {
-            ElMessage.warning(`${failCount} folders failed to scan (maybe not a Node project)`);
+            ElMessage.warning(t('dashboard.batchAddFail', { count: failCount }));
         }
     } catch (err) {
         console.error('Failed to batch add projects:', err);

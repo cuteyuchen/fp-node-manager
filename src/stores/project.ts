@@ -114,14 +114,16 @@ export const useProjectStore = defineStore('project', () => {
         
         // Log debug info
         logs.value[runId].push(`[Runner] Starting script: ${script}`);
-        logs.value[runId].push(`[Runner] Selected Node Version: ${project.nodeVersion || 'None'}`);
-        logs.value[runId].push(`[Runner] Resolved Node Path: ${nodePath || 'System Default'}`);
+        logs.value[runId].push(`[Runner] Project: ${project.name}`);
+        logs.value[runId].push(`[Runner] Package Manager: ${project.packageManager || 'npm'}`);
+        logs.value[runId].push(`[Runner] Node Version: ${project.nodeVersion || 'Default'}`);
+        logs.value[runId].push(`[Runner] Node Path: ${nodePath || 'System Default'}`);
         
         await api.runProjectCommand(
             runId,
             project.path,
             script,
-            project.packageManager,
+            project.packageManager || 'npm',
             nodePath
         );
     } catch (e) {
