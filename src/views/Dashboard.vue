@@ -15,6 +15,26 @@ const showModal = ref(false);
 const editingProject = ref<Project | null>(null);
 const refreshing = ref(false);
 
+function normalizeNvmVersion(rawVersion?: string | null): string | null {
+    if (!rawVersion) return null;
+    const trimmed = rawVersion.trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed.toLowerCase().startsWith('v') ? trimmed.slice(1) : trimmed;
+    if (!/^\d+(\.\d+){0,2}$/.test(normalized)) {
+        return null;
+    }
+
+    return normalized;
+}
+
+function findInstalledNodeVersion(nodeVersionList: string[], targetVersion: string): string | undefined {
+    return nodeVersionList.find((item) => {
+        const normalizedItem = item.toLowerCase().startsWith('v') ? item.slice(1) : item;
+        return normalizedItem === targetVersion || normalizedItem.startsWith(`${targetVersion}.`);
+    });
+}
+
 //************* 搜索功能 *************
 const searchQuery = ref('');
 
@@ -72,8 +92,18 @@ async function batchAddProjects() {
         let addedCount = 0;
         let skipCount = 0;
         let failCount = 0;
+        let hasInvalidNvmrc = false;
         
         const pathsToScan: string[] = [];
+        const processedInstallVersions = new Set<string>();
+        let currentNodeVersions: string[] = [];
+
+        try {
+            const nvmList = await api.getNvmList();
+            currentNodeVersions = nvmList.map(v => v.version);
+        } catch (e) {
+            console.error('Failed to load node versions before batch add', e);
+        }
         
         // First pass: determine which paths to scan
         for (const path of paths) {
@@ -113,12 +143,46 @@ async function batchAddProjects() {
             
             try {
                 const info = await api.scanProject(path);
+                let nodeVersion = 'Default';
+
+                const normalizedNvmVersion = normalizeNvmVersion(info.nvmVersion);
+                if (normalizedNvmVersion) {
+                    let installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+
+                    if (!installed && !processedInstallVersions.has(normalizedNvmVersion)) {
+                        processedInstallVersions.add(normalizedNvmVersion);
+                        try {
+                            ElMessage.info(t('project.autoInstallStart', { version: normalizedNvmVersion }));
+                            await api.installNode(normalizedNvmVersion);
+                            ElMessage.success(t('project.autoInstallSuccess', { version: normalizedNvmVersion }));
+
+                            const latestList = await api.getNvmList();
+                            currentNodeVersions = latestList.map(v => v.version);
+                            installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+                        } catch (installErr) {
+                            ElMessage.error(`${t('project.autoInstallFailed', { version: normalizedNvmVersion })}: ${String(installErr)}`);
+                            console.error('Failed to auto-install node version in batch add', installErr);
+                        }
+                    }
+
+                    if (!installed) {
+                        installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+                    }
+
+                    if (installed) {
+                        nodeVersion = installed;
+                    }
+                } else if (info.nvmVersion) {
+                    hasInvalidNvmrc = true;
+                    console.warn('Invalid .nvmrc version in batch add, skipping auto install', info.nvmVersion);
+                }
+
                 const project: Project = {
                     id: crypto.randomUUID(),
                     name: info.name || path.split(/[/\\]/).pop() || 'Unknown',
                     path: path,
                     type: 'node',
-                    nodeVersion: 'Default',
+                    nodeVersion,
                     packageManager: info.packageManager || 'npm',
                     scripts: info.scripts
                 };
@@ -138,6 +202,9 @@ async function batchAddProjects() {
         }
         if (failCount > 0 && addedCount === 0) {
             ElMessage.warning(t('dashboard.batchAddFail', { count: failCount }));
+        }
+        if (hasInvalidNvmrc) {
+            ElMessage.warning(t('project.invalidNvmrc'));
         }
     } catch (err) {
         console.error('Failed to batch add projects:', err);

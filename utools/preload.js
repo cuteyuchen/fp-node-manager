@@ -590,22 +590,7 @@ window.services = {
     //************* 终端检测 *************
     detectAvailableTerminals: async () => {
         const terminals = [];
-
-        // 检查命令是否存在
-        function checkCommandExists(cmd) {
-            try {
-                if (process.platform === 'win32') {
-                    execSync(`where ${cmd}`, { stdio: 'ignore' });
-                    return true;
-                } else {
-                    execSync(`which ${cmd}`, { stdio: 'ignore' });
-                    return true;
-                }
-            } catch (e) {
-                return false;
-            }
-        }
-
+        
         // Windows 平台
         if (process.platform === 'win32') {
             terminals.push({
@@ -613,126 +598,191 @@ window.services = {
                 name: 'Command Prompt (cmd.exe)'
             });
 
-            if (checkCommandExists('powershell')) {
+            try {
+                execSync('where powershell', { stdio: 'ignore' });
                 terminals.push({
                     id: 'powershell',
                     name: 'PowerShell'
                 });
-            }
+            } catch (e) {}
 
-            if (checkCommandExists('pwsh')) {
-                terminals.push({
-                    id: 'pwsh',
-                    name: 'PowerShell Core (pwsh)'
-                });
-            }
-
-            // 检查 Git Bash
-            const programFiles = process.env.ProgramFiles || '';
-            const programFilesX86 = process.env['ProgramFiles(x86)'] || '';
-            const gitBashPaths = [
-                path.join(programFiles, 'Git', 'bin', 'bash.exe'),
-                path.join(programFilesX86, 'Git', 'bin', 'bash.exe'),
-                'C:\\Program Files\\Git\\bin\\bash.exe',
-                'C:\\Program Files (x86)\\Git\\bin\\bash.exe'
-            ];
-            if (gitBashPaths.some(p => fs.existsSync(p)) || checkCommandExists('bash')) {
-                terminals.push({
-                    id: 'git-bash',
-                    name: 'Git Bash'
-                });
-            }
-
-            // 检查 Windows Terminal
-            const localAppData = process.env.LOCALAPPDATA || '';
-            const wtPath = path.join(localAppData, 'Microsoft', 'WindowsApps', 'wt.exe');
-            if (fs.existsSync(wtPath) || checkCommandExists('wt')) {
-                terminals.push({
-                    id: 'windows-terminal',
-                    name: 'Windows Terminal'
-                });
-            }
-
-            // 检查 Cmder
-            const cmderPaths = [
-                path.join(localAppData, 'Cmder', 'Cmder.exe'),
-                'C:\\Program Files\\Cmder\\Cmder.exe'
-            ];
-            if (cmderPaths.some(p => fs.existsSync(p))) {
-                terminals.push({
-                    id: 'cmder',
-                    name: 'Cmder'
-                });
-            }
+        } else if (process.platform === 'darwin') {
+            terminals.push({
+                id: 'terminal',
+                name: 'Terminal.app'
+            });
+        } else {
+             // Linux
+             try { execSync('which gnome-terminal', { stdio: 'ignore' }); terminals.push({ id: 'gnome-terminal', name: 'GNOME Terminal' }); } catch(e) {}
+             try { execSync('which konsole', { stdio: 'ignore' }); terminals.push({ id: 'konsole', name: 'Konsole (KDE)' }); } catch(e) {}
+             try { execSync('which xfce4-terminal', { stdio: 'ignore' }); terminals.push({ id: 'xfce4-terminal', name: 'XFCE Terminal' }); } catch(e) {}
         }
-        // macOS 平台
-        else if (process.platform === 'darwin') {
-            if (fs.existsSync('/Applications/Utilities/Terminal.app') || fs.existsSync('/System/Applications/Utilities/Terminal.app')) {
-                terminals.push({
-                    id: 'terminal',
-                    name: 'Terminal.app'
-                });
-            }
-
-            if (fs.existsSync('/Applications/iTerm.app')) {
-                terminals.push({
-                    id: 'iterm2',
-                    name: 'iTerm2'
-                });
-            }
-
-            if (checkCommandExists('zsh')) {
-                terminals.push({
-                    id: 'zsh',
-                    name: 'Zsh'
-                });
-            }
-
-            if (checkCommandExists('bash')) {
-                terminals.push({
-                    id: 'bash',
-                    name: 'Bash'
-                });
-            }
-        }
-        // Linux 平台
-        else {
-            if (checkCommandExists('bash')) {
-                terminals.push({
-                    id: 'bash',
-                    name: 'Bash'
-                });
-            }
-
-            if (checkCommandExists('zsh')) {
-                terminals.push({
-                    id: 'zsh',
-                    name: 'Zsh'
-                });
-            }
-
-            if (checkCommandExists('gnome-terminal')) {
-                terminals.push({
-                    id: 'gnome-terminal',
-                    name: 'GNOME Terminal'
-                });
-            }
-
-            if (checkCommandExists('konsole')) {
-                terminals.push({
-                    id: 'konsole',
-                    name: 'Konsole (KDE)'
-                });
-            }
-
-            if (checkCommandExists('xfce4-terminal')) {
-                terminals.push({
-                    id: 'xfce4-terminal',
-                    name: 'XFCE Terminal'
-                });
-            }
-        }
-
+        
         return terminals;
-    }
+    },
+    
+    //************* 终端打开 *************
+    openInTerminal: async (projectPath, terminal) => {
+        const term = (terminal || 'cmd').trim().toLowerCase();
+        
+        if (process.platform === 'win32') {
+            try {
+                const winPath = projectPath.replace(/\//g, "\\");
+                
+                if (term === 'powershell') {
+                     // PowerShell: start a new window, cd to path
+                     spawn('cmd', ['/C', 'start', '/D', winPath, 'powershell', '-NoExit'], { detached: true, stdio: 'ignore' });
+                } else if (term === 'pwsh') {
+                     spawn('cmd', ['/C', 'start', '/D', winPath, 'pwsh', '-NoExit'], { detached: true, stdio: 'ignore' });
+                } else {
+                    // CMD (Default)
+                    spawn('cmd', ['/C', 'start', '/D', winPath, 'cmd'], { detached: true, stdio: 'ignore' });
+                }
+            } catch (e) {
+                console.error('Failed to open terminal', e);
+            }
+        } else if (process.platform === 'darwin') {
+             try {
+                spawn('open', ['-a', 'Terminal', projectPath], { detached: true, stdio: 'ignore' });
+             } catch (e) {
+                console.error(e);
+             }
+        } else {
+            // Linux
+            const terms = [
+                { id: 'gnome-terminal', cmd: 'gnome-terminal', args: ['--working-directory', projectPath] },
+                { id: 'konsole', cmd: 'konsole', args: ['--workdir', projectPath] },
+                { id: 'xfce4-terminal', cmd: 'xfce4-terminal', args: ['--working-directory', projectPath] }
+            ];
+            
+            const target = terms.find(t => t.id === term);
+            
+            if (target) {
+                 spawn(target.cmd, target.args, { detached: true, stdio: 'ignore' }).unref();
+            } else {
+                // Fallback attempt
+                for (const t of terms) {
+                    try {
+                        const child = spawn(t.cmd, t.args, { detached: true, stdio: 'ignore' });
+                        child.on('error', () => {});
+                        child.unref();
+                        break;
+                    } catch (e) {}
+                }
+            }
+        }
+    },
+    
+    detectAvailableTerminals: async () => {
+        const terminals = [];
+        
+        if (process.platform === 'win32') {
+             terminals.push({ id: 'cmd', name: 'Command Prompt (cmd.exe)' });
+             try { execSync('where powershell', { stdio: 'ignore' }); terminals.push({ id: 'powershell', name: 'PowerShell' }); } catch(e) {}
+        } else if (process.platform === 'darwin') {
+             terminals.push({ id: 'terminal', name: 'Terminal.app' });
+        } else {
+             try { execSync('which gnome-terminal', { stdio: 'ignore' }); terminals.push({ id: 'gnome-terminal', name: 'GNOME Terminal' }); } catch(e) {}
+             try { execSync('which konsole', { stdio: 'ignore' }); terminals.push({ id: 'konsole', name: 'Konsole (KDE)' }); } catch(e) {}
+             try { execSync('which xfce4-terminal', { stdio: 'ignore' }); terminals.push({ id: 'xfce4-terminal', name: 'XFCE Terminal' }); } catch(e) {}
+        }
+        
+        return terminals;
+    },
+
+    readConfigFile: async (filename) => {
+        // Use userData path
+        const userPath = utools.getPath('userData');
+        const filePath = path.join(userPath, filename);
+        if (fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath, 'utf-8');
+        }
+        return "";
+    },
+    
+    writeConfigFile: async (filename, content) => {
+        const userPath = utools.getPath('userData');
+        const filePath = path.join(userPath, filename);
+        fs.writeFileSync(filePath, content, 'utf-8');
+    },
+
+    readTextFile: async (path) => {
+        return fs.readFileSync(path, 'utf-8');
+    },
+
+    writeTextFile: async (path, content) => {
+        fs.writeFileSync(path, content, 'utf-8');
+    },
+    
+    readDir: async (dirPath) => {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        return entries.map(e => ({
+            name: e.name,
+            isDirectory: e.isDirectory()
+        }));
+    },
+    
+    openDialog: async (options) => {
+        const electronOptions = {
+            properties: []
+        };
+        if (options?.directory) {
+            electronOptions.properties.push('openDirectory');
+        } else {
+            electronOptions.properties.push('openFile');
+        }
+        if (options?.multiple) {
+            electronOptions.properties.push('multiSelections');
+        }
+        if (options?.defaultPath) {
+            electronOptions.defaultPath = options.defaultPath;
+        }
+        if (options?.filters) {
+            electronOptions.filters = options.filters;
+        }
+
+        const result = utools.showOpenDialog(electronOptions);
+        if (!result) return null;
+        if (options?.multiple) return result;
+        return result[0];
+    },
+    
+    saveDialog: async (options) => {
+        return utools.showSaveDialog(options);
+    },
+    
+    openUrl: async (url) => {
+        utools.shellOpenExternal(url);
+    },
+    
+    openFolder: async (path) => {
+        utools.shellOpenPath(path);
+    },
+    
+    openInEditor: async (path, editor = 'code') => {
+        spawn(editor, [path], { shell: true });
+    },
+    
+    getAppVersion: async () => {
+        return "0.1.13";
+    },
+    
+    installUpdate: async (url) => {
+        utools.shellOpenExternal(url);
+    },
+    
+    onDownloadProgress: async (cb) => {
+        return () => {};
+    },
+    
+    // Window controls
+    windowMinimize: async () => {
+        utools.hideMainWindow();
+    },
+    windowMaximize: async () => {},
+    windowUnmaximize: async () => {},
+    windowClose: async () => { utools.outPlugin(); },
+    windowIsMaximized: async () => true,
+    windowSetAlwaysOnTop: async () => {},
+    onWindowResize: async () => () => {},
 };
