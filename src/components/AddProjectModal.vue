@@ -4,6 +4,7 @@ import { api } from '../api';
 import type { Project } from '../types';
 import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
+import { normalizeNvmVersion, findInstalledNodeVersion } from '../utils/nvm';
 
 const { t } = useI18n();
 const props = defineProps<{ 
@@ -39,26 +40,6 @@ const form = ref<{
 
 const nodeVersions = ref<string[]>([]);
 const loading = ref(false);
-
-function normalizeNvmVersion(rawVersion?: string | null): string | null {
-  if (!rawVersion) return null;
-  const trimmed = rawVersion.trim();
-  if (!trimmed) return null;
-
-  const normalized = trimmed.toLowerCase().startsWith('v') ? trimmed.slice(1) : trimmed;
-  if (!/^\d+(\.\d+){0,2}$/.test(normalized)) {
-    return null;
-  }
-
-  return normalized;
-}
-
-function findInstalledNodeVersion(targetVersion: string): string | undefined {
-  return nodeVersions.value.find((item) => {
-    const normalizedItem = item.toLowerCase().startsWith('v') ? item.slice(1) : item;
-    return normalizedItem === targetVersion || normalizedItem.startsWith(`${targetVersion}.`);
-  });
-}
 
 function resetForm() {
     form.value = {
@@ -121,7 +102,7 @@ async function selectFolder() {
 
         const normalizedNvmVersion = normalizeNvmVersion(info.nvmVersion);
         if (normalizedNvmVersion) {
-          const installed = findInstalledNodeVersion(normalizedNvmVersion);
+          const installed = findInstalledNodeVersion(nodeVersions.value, normalizedNvmVersion);
 
           if (installed) {
             form.value.nodeVersion = installed;
@@ -133,7 +114,7 @@ async function selectFolder() {
               const list = await api.getNvmList();
               nodeVersions.value = list.map(v => v.version);
 
-              const newInstalled = findInstalledNodeVersion(normalizedNvmVersion);
+              const newInstalled = findInstalledNodeVersion(nodeVersions.value, normalizedNvmVersion);
               if (newInstalled) {
                 form.value.nodeVersion = newInstalled;
               }

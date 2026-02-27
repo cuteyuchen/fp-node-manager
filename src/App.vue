@@ -15,6 +15,7 @@ import { useProjectStore } from './stores/project';
 import { useSettingsStore } from './stores/settings';
 import { useNodeStore } from './stores/node';
 import type { Project } from './types';
+import { normalizeNvmVersion, findInstalledNodeVersion } from './utils/nvm';
 
 const target = import.meta.env.VITE_TARGET;
 
@@ -29,6 +30,7 @@ let unlistenSingleInstance: UnlistenFn | null = null;
 
 const showUpdateProgress = ref(false);
 const downloadProgress = ref(0);
+const processedImportInstallVersions = new Set<string>();
 
 
 async function handleImportProject(path: string) {
@@ -46,13 +48,55 @@ async function handleImportProject(path: string) {
 
   try {
     const info = await api.scanProject(path);
+    let nodeVersion = '';
+
+    const normalizedNvmVersion = normalizeNvmVersion(info.nvmVersion);
+    if (normalizedNvmVersion) {
+      let currentNodeVersions: string[] = [];
+      try {
+        const nvmList = await api.getNvmList();
+        currentNodeVersions = nvmList.map(v => v.version);
+      } catch (nvmErr) {
+        console.error('Failed to load node versions for import', nvmErr);
+      }
+
+      let installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+
+      if (!installed && !processedImportInstallVersions.has(normalizedNvmVersion)) {
+        processedImportInstallVersions.add(normalizedNvmVersion);
+        try {
+          ElMessage.info(t('project.autoInstallStart', { version: normalizedNvmVersion }));
+          await api.installNode(normalizedNvmVersion);
+          ElMessage.success(t('project.autoInstallSuccess', { version: normalizedNvmVersion }));
+
+          const latestList = await api.getNvmList();
+          currentNodeVersions = latestList.map(v => v.version);
+          installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+        } catch (installErr) {
+          ElMessage.error(`${t('project.autoInstallFailed', { version: normalizedNvmVersion })}: ${String(installErr)}`);
+          console.error('Failed to auto-install node version while importing project', installErr);
+        }
+      }
+
+      if (!installed) {
+        installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+      }
+
+      if (installed) {
+        nodeVersion = installed;
+      }
+    } else if (info.nvmVersion) {
+      ElMessage.warning(t('project.invalidNvmrc'));
+      console.warn('Invalid .nvmrc version while importing project', info.nvmVersion);
+    }
+
     const project: Project = {
       id: crypto.randomUUID(),
       name: info.name || path.split(/[\\/]/).pop() || 'Untitled',
       path: path,
       type: 'node',
-      nodeVersion: '',
-      packageManager: 'npm',
+      nodeVersion,
+      packageManager: info.packageManager || 'npm',
       scripts: info.scripts
     };
     store.addProject(project);

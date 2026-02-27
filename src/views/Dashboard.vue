@@ -8,32 +8,13 @@ import type { Project } from '../types';
 import { useI18n } from 'vue-i18n';
 import { api } from '../api';
 import { ElMessage } from 'element-plus';
+import { normalizeNvmVersion, findInstalledNodeVersion } from '../utils/nvm';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
 const showModal = ref(false);
 const editingProject = ref<Project | null>(null);
 const refreshing = ref(false);
-
-function normalizeNvmVersion(rawVersion?: string | null): string | null {
-    if (!rawVersion) return null;
-    const trimmed = rawVersion.trim();
-    if (!trimmed) return null;
-
-    const normalized = trimmed.toLowerCase().startsWith('v') ? trimmed.slice(1) : trimmed;
-    if (!/^\d+(\.\d+){0,2}$/.test(normalized)) {
-        return null;
-    }
-
-    return normalized;
-}
-
-function findInstalledNodeVersion(nodeVersionList: string[], targetVersion: string): string | undefined {
-    return nodeVersionList.find((item) => {
-        const normalizedItem = item.toLowerCase().startsWith('v') ? item.slice(1) : item;
-        return normalizedItem === targetVersion || normalizedItem.startsWith(`${targetVersion}.`);
-    });
-}
 
 //************* 搜索功能 *************
 const searchQuery = ref('');
