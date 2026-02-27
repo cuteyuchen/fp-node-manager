@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n';
 import { api } from '../api';
 import { ElMessage } from 'element-plus';
 import { normalizeNvmVersion, findInstalledNodeVersion } from '../utils/nvm';
+import { pinyin } from 'pinyin-pro';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
@@ -19,15 +20,33 @@ const refreshing = ref(false);
 //************* 搜索功能 *************
 const searchQuery = ref('');
 
+function buildPinyinSearchText(text: string): string {
+    if (!text) return '';
+    const syllables = pinyin(text, { toneType: 'none', type: 'array' }) as string[];
+    const full = syllables.join('');
+    const initials = syllables.map(s => s[0] || '').join('');
+    return `${full} ${initials}`.toLowerCase();
+}
+
 const filteredProjects = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
+    const query = searchQuery.value.trim().toLowerCase();
+    const compactQuery = query.replace(/\s+/g, '');
   if (!query) {
     return projectStore.projects;
   }
-  return projectStore.projects.filter(project => 
-    project.name.toLowerCase().includes(query) ||
-    project.path.toLowerCase().includes(query)
-  );
+    return projectStore.projects.filter(project => {
+        const name = project.name.toLowerCase();
+        const projectPath = project.path.toLowerCase();
+
+        if (name.includes(query) || projectPath.includes(query)) {
+            return true;
+        }
+
+        const namePinyin = buildPinyinSearchText(project.name);
+        const pathPinyin = buildPinyinSearchText(project.path);
+
+        return namePinyin.includes(compactQuery) || pathPinyin.includes(compactQuery);
+    });
 });
 
 function handleAdd(project: Project) {
