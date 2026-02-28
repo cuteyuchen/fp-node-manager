@@ -156,6 +156,7 @@ export class UToolsAdapter implements PlatformAPI {
   async gitCheckout(_path: string, _branch: string): Promise<string> { this.gitNotSupported(); }
   async gitCreateBranch(_path: string, _name: string, _startPoint?: string): Promise<string> { this.gitNotSupported(); }
   async gitDeleteBranch(_path: string, _name: string, _force?: boolean): Promise<string> { this.gitNotSupported(); }
+  async gitRenameBranch(_path: string, _oldName: string, _newName: string): Promise<string> { this.gitNotSupported(); }
   async gitMerge(_path: string, _branch: string): Promise<string> { this.gitNotSupported(); }
   async gitRebase(_path: string, _branch: string): Promise<string> { this.gitNotSupported(); }
   async gitRmCached(_path: string, _files: string[]): Promise<string> { this.gitNotSupported(); }
@@ -172,6 +173,9 @@ export class UToolsAdapter implements PlatformAPI {
   async gitStashDrop(_path: string, _index: number): Promise<string> { this.gitNotSupported(); }
   async gitStashList(_path: string): Promise<GitStashEntry[]> { this.gitNotSupported(); }
   async gitRemoteList(_path: string): Promise<GitRemote[]> { this.gitNotSupported(); }
+    async gitRemoteAdd(_path: string, _name: string, _url: string): Promise<string> { this.gitNotSupported(); }
+    async gitRemoteSetUrl(_path: string, _name: string, _url: string): Promise<string> { this.gitNotSupported(); }
+    async gitRemoteRemove(_path: string, _name: string): Promise<string> { this.gitNotSupported(); }
   async gitCurrentBranch(_path: string): Promise<string> { this.gitNotSupported(); }
   async gitTags(_path: string): Promise<GitTag[]> { this.gitNotSupported(); }
 }

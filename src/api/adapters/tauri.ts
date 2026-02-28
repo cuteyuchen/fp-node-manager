@@ -250,6 +250,10 @@ export class TauriAdapter implements PlatformAPI {
         return invoke('git_delete_branch', { path, name, force });
     }
 
+    async gitRenameBranch(path: string, oldName: string, newName: string): Promise<string> {
+        return invoke('git_rename_branch', { path, oldName, newName });
+    }
+
     async gitMerge(path: string, branch: string): Promise<string> {
         return invoke('git_merge', { path, branch });
     }
@@ -308,6 +312,18 @@ export class TauriAdapter implements PlatformAPI {
 
     async gitRemoteList(path: string): Promise<GitRemote[]> {
         return invoke('git_remote_list', { path });
+    }
+
+    async gitRemoteAdd(path: string, name: string, url: string): Promise<string> {
+        return invoke('git_remote_add', { path, name, url });
+    }
+
+    async gitRemoteSetUrl(path: string, name: string, url: string): Promise<string> {
+        return invoke('git_remote_set_url', { path, name, url });
+    }
+
+    async gitRemoteRemove(path: string, name: string): Promise<string> {
+        return invoke('git_remote_remove', { path, name });
     }
 
     async gitCurrentBranch(path: string): Promise<string> {

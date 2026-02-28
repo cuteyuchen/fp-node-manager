@@ -97,6 +97,7 @@ export interface PlatformAPI {
     gitCheckout(path: string, branch: string): Promise<string>;
     gitCreateBranch(path: string, name: string, startPoint?: string): Promise<string>;
     gitDeleteBranch(path: string, name: string, force?: boolean): Promise<string>;
+    gitRenameBranch(path: string, oldName: string, newName: string): Promise<string>;
     gitMerge(path: string, branch: string): Promise<string>;
     gitRebase(path: string, branch: string): Promise<string>;
     gitRmCached(path: string, files: string[]): Promise<string>;
@@ -112,6 +113,9 @@ export interface PlatformAPI {
     gitStashDrop(path: string, index: number): Promise<string>;
     gitStashList(path: string): Promise<GitStashEntry[]>;
     gitRemoteList(path: string): Promise<GitRemote[]>;
+    gitRemoteAdd(path: string, name: string, url: string): Promise<string>;
+    gitRemoteSetUrl(path: string, name: string, url: string): Promise<string>;
+    gitRemoteRemove(path: string, name: string): Promise<string>;
     gitCurrentBranch(path: string): Promise<string>;
     gitTags(path: string): Promise<GitTag[]>;
     gitDeleteTag(path: string, name: string): Promise<string>;

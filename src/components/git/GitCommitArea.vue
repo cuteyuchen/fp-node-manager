@@ -39,18 +39,21 @@ async function handleCommit() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden bg-white/50 dark:bg-[#0f172a]/50">
+  <div class="h-full flex flex-col overflow-hidden bg-white/40 dark:bg-[#0f172a]/40">
     <!-- Header -->
-    <div class="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-200/60 dark:border-slate-700/30 shrink-0">
-      <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">{{ t('git.commitMessage') }}</span>
-      <span v-if="stagedFiles.length > 0" class="text-[10px] text-blue-500">{{ stagedFiles.length }} {{ t('git.staged') }}</span>
+    <div class="flex items-center justify-between px-2.5 py-1 border-b border-slate-200/40 dark:border-slate-700/20 shrink-0">
+      <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+        <div class="i-mdi-message-text-outline text-xs text-blue-500/60" />
+        {{ t('git.commitMessage') }}
+      </span>
+      <span v-if="stagedFiles.length > 0" class="text-[9px] text-blue-500/80 bg-blue-500/8 px-1.5 py-0.5 rounded-full leading-none font-medium">{{ stagedFiles.length }} {{ t('git.staged') }}</span>
     </div>
     <!-- Textarea -->
     <div class="flex-1 p-1.5 overflow-hidden min-h-0">
       <textarea
         v-model="commitMessage"
         :placeholder="t('git.commitPlaceholder')"
-        class="w-full h-full px-2 py-1.5 text-xs rounded border border-slate-200/80 dark:border-slate-700/40 bg-slate-50/80 dark:bg-slate-900/30 text-slate-700 dark:text-slate-300 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 placeholder:text-slate-400/50"
+        class="w-full h-full px-2 py-1.5 text-[11px] rounded-md border border-slate-200/60 dark:border-slate-700/30 bg-slate-50/50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500/30 placeholder:text-slate-400/40 transition-all duration-150"
         @keydown.ctrl.enter="handleCommit"
       />
     </div>
@@ -58,8 +61,8 @@ async function handleCommit() {
     <div class="px-1.5 pb-1.5 shrink-0">
       <button @click="handleCommit"
         :disabled="!commitMessage.trim() || stagedFiles.length === 0"
-        class="w-full py-1.5 rounded text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed flex items-center justify-center gap-1">
-        <div class="i-mdi-check text-sm" />
+        class="w-full py-1.5 rounded-md text-[11px] font-medium bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1 shadow-sm hover:shadow">
+        <div class="i-mdi-check text-xs" />
         {{ t('git.commit') }}
       </button>
     </div>

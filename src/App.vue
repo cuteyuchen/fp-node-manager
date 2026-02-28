@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, h } from 'vue';
+import { ref, onMounted, onUnmounted, watch, h, computed, KeepAlive } from 'vue';
 import { api } from './api';
 import { ElMessageBox, ElMessage, ElLoading } from 'element-plus';
 import type { UnlistenFn } from '@tauri-apps/api/event';
@@ -372,9 +372,11 @@ watch(() => nodeStore.versions, triggerSave, { deep: true });
         </div>
 
         <div class="relative h-full z-10 backdrop-blur-[0px]">
-          <Dashboard v-if="currentView === 'dashboard'" />
-          <Settings v-if="currentView === 'settings'" />
-          <NodeManager v-if="currentView === 'nodes'" />
+          <KeepAlive>
+            <Dashboard v-if="currentView === 'dashboard'" key="dashboard" />
+            <Settings v-else-if="currentView === 'settings'" key="settings" />
+            <NodeManager v-else-if="currentView === 'nodes'" key="nodes" />
+          </KeepAlive>
         </div>
         
         <!-- Drag Overlay -->

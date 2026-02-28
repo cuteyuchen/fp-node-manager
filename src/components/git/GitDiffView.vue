@@ -171,25 +171,25 @@ function computeLineNumbers(lines: string[]): NumberedLine[] {
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <!-- Header -->
-    <div v-if="parsedDiff" class="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 dark:border-slate-700/30 bg-white/50 dark:bg-[#1e293b]/50 flex-shrink-0">
-      <div class="flex items-center gap-2 text-xs">
-        <div class="i-mdi-file-compare text-blue-500" />
+    <div v-if="parsedDiff" class="flex items-center justify-between px-3 py-1 border-b border-slate-200/60 dark:border-slate-700/20 bg-white/40 dark:bg-[#1e293b]/40 flex-shrink-0">
+      <div class="flex items-center gap-2 text-[11px]">
+        <div class="i-mdi-file-compare text-xs text-blue-500" />
         <span class="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[260px]">{{ parsedDiff.fileName || diffFile }}</span>
-        <span class="text-green-500 font-mono">+{{ parsedDiff.additions }}</span>
-        <span class="text-red-500 font-mono">-{{ parsedDiff.deletions }}</span>
+        <span class="text-green-500 font-mono text-[10px]">+{{ parsedDiff.additions }}</span>
+        <span class="text-red-500 font-mono text-[10px]">-{{ parsedDiff.deletions }}</span>
       </div>
-      <div class="flex items-center gap-1 text-[10px] text-slate-400">
-        <span v-if="isStaged" class="px-1.5 py-0.5 rounded bg-green-500/10 text-green-500">{{ t('git.staged') }}</span>
-        <span v-else class="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500">{{ t('git.unstaged') }}</span>
+      <div class="flex items-center gap-1 text-[9px] text-slate-400">
+        <span v-if="isStaged" class="px-1.5 py-0.5 rounded-md bg-green-500/8 text-green-500 font-medium">{{ t('git.staged') }}</span>
+        <span v-else class="px-1.5 py-0.5 rounded-md bg-amber-500/8 text-amber-500 font-medium">{{ t('git.unstaged') }}</span>
       </div>
     </div>
 
     <!-- Hunk list -->
     <div v-if="parsedDiff && parsedDiff.hunks.length > 0" class="flex-1 overflow-auto custom-scrollbar">
-      <div v-for="(hunk, hunkIdx) in parsedDiff.hunks" :key="hunkIdx" class="border-b border-slate-200/60 dark:border-slate-700/30">
+      <div v-for="(hunk, hunkIdx) in parsedDiff.hunks" :key="hunkIdx" class="border-b border-slate-200/40 dark:border-slate-700/20">
         <!-- Hunk header with actions -->
-        <div class="flex items-center justify-between px-3 py-1 bg-blue-50/60 dark:bg-blue-900/10 sticky top-0 z-10 border-b border-slate-200/40 dark:border-slate-700/20">
-          <span class="font-mono text-[11px] text-blue-600 dark:text-blue-400 truncate flex-1">{{ hunk.header }}</span>
+        <div class="flex items-center justify-between px-3 py-0.5 bg-blue-50/40 dark:bg-blue-900/8 sticky top-0 z-10 border-b border-slate-200/30 dark:border-slate-700/15">
+          <span class="font-mono text-[10px] text-blue-600/80 dark:text-blue-400/80 truncate flex-1">{{ hunk.header }}</span>
           <div class="flex items-center gap-1 flex-shrink-0 ml-2">
             <button v-if="!isStaged" @click="stageHunk(hunk)"
               class="hunk-action-btn text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
@@ -239,8 +239,8 @@ function computeLineNumbers(lines: string[]): NumberedLine[] {
     <!-- Empty state -->
     <div v-else class="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500">
       <div class="text-center">
-        <div class="i-mdi-file-compare text-5xl opacity-20 mx-auto mb-3" />
-        <p class="text-sm">{{ t('git.selectFileToView') }}</p>
+        <div class="i-mdi-file-compare text-4xl opacity-15 mx-auto mb-3" />
+        <p class="text-[11px] text-slate-400/60">{{ t('git.selectFileToView') }}</p>
       </div>
     </div>
   </div>
@@ -248,7 +248,15 @@ function computeLineNumbers(lines: string[]): NumberedLine[] {
 
 <style scoped>
 .hunk-action-btn {
-  @apply flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
 }
 
 .diff-table {
@@ -275,8 +283,8 @@ function computeLineNumbers(lines: string[]): NumberedLine[] {
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;

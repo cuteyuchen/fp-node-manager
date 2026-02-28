@@ -393,7 +393,7 @@ pub fn git_checkout(path: String, branch: String) -> Result<String, String> {
 
 #[tauri::command]
 pub fn git_create_branch(path: String, name: String, start_point: Option<String>) -> Result<String, String> {
-    let mut args = vec!["checkout", "-b", &name];
+    let mut args = vec!["branch", &name];
     if let Some(ref sp) = start_point {
         args.push(sp.as_str());
     }
@@ -404,6 +404,11 @@ pub fn git_create_branch(path: String, name: String, start_point: Option<String>
 pub fn git_delete_branch(path: String, name: String, force: Option<bool>) -> Result<String, String> {
     let flag = if force.unwrap_or(false) { "-D" } else { "-d" };
     run_git(&path, &["branch", flag, &name])
+}
+
+#[tauri::command]
+pub fn git_rename_branch(path: String, old_name: String, new_name: String) -> Result<String, String> {
+    run_git(&path, &["branch", "-m", &old_name, &new_name])
 }
 
 #[tauri::command]
@@ -624,6 +629,21 @@ pub fn git_remote_list(path: String) -> Result<Vec<GitRemote>, String> {
     }
 
     Ok(remotes)
+}
+
+#[tauri::command]
+pub fn git_remote_add(path: String, name: String, url: String) -> Result<String, String> {
+    run_git(&path, &["remote", "add", &name, &url])
+}
+
+#[tauri::command]
+pub fn git_remote_set_url(path: String, name: String, url: String) -> Result<String, String> {
+    run_git(&path, &["remote", "set-url", &name, &url])
+}
+
+#[tauri::command]
+pub fn git_remote_remove(path: String, name: String) -> Result<String, String> {
+    run_git(&path, &["remote", "remove", &name])
 }
 
 #[tauri::command]

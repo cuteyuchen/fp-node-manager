@@ -12,6 +12,7 @@ import GitDiffView from './GitDiffView.vue';
 import GitLogGraph from './GitLogGraph.vue';
 import GitBranchDialog from './GitBranchDialog.vue';
 import GitStashPanel from './GitStashPanel.vue';
+import GitRemoteSettingsDialog from './GitRemoteSettingsDialog.vue';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
@@ -20,6 +21,7 @@ const gitStore = useGitStore();
 const activeSubTab = ref<'status' | 'log'>('status');
 const showBranchDialog = ref(false);
 const showStashDialog = ref(false);
+const showRemoteSettings = ref(false);
 const branchDialogMode = ref<'create' | 'delete'>('create');
 const branchToDelete = ref('');
 
@@ -61,6 +63,11 @@ watch(activeProject, async (newProject, oldProject) => {
   }
 }, { immediate: true });
 
+// Clear diff when switching sub-tabs to prevent stale data from commit selection
+watch(activeSubTab, () => {
+  gitStore.clearDiff();
+});
+
 async function handleInitRepo() {
   if (!activeProject.value) return;
   try {
@@ -79,6 +86,10 @@ function handleOpenBranchDialog(mode: 'create' | 'delete' = 'create', branch = '
 
 function handleOpenStash() {
   showStashDialog.value = true;
+}
+
+function handleOpenRemoteSettings() {
+  showRemoteSettings.value = true;
 }
 
 async function handleRefresh() {
@@ -124,7 +135,7 @@ function onDragEnd() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden bg-[#f8f9fb] dark:bg-[#0c1222]">
+  <div class="h-full flex flex-col overflow-hidden bg-gradient-to-br from-[#f8f9fb] to-[#f1f5f9] dark:from-[#0c1222] dark:to-[#0a0f1a]">
     <template v-if="isGitRepo && activeProject">
       <!-- Toolbar -->
       <GitToolbar
@@ -132,35 +143,36 @@ function onDragEnd() {
         @open-branch-dialog="handleOpenBranchDialog"
         @open-stash="handleOpenStash"
         @refresh="handleRefresh"
+        @open-remote-settings="handleOpenRemoteSettings"
       />
 
       <!-- Sub-tab toggle -->
-      <div class="flex border-b border-slate-200/80 dark:border-slate-700/40 bg-white/60 dark:bg-[#141d2e]/60 px-3 shrink-0">
+      <div class="flex items-center gap-1 border-b border-slate-200/60 dark:border-slate-700/30 bg-white/50 dark:bg-[#141d2e]/50 px-3 py-1 shrink-0">
         <button
           @click="activeSubTab = 'status'"
-          class="px-3 py-1.5 text-xs font-medium border-b-2 transition-all cursor-pointer"
+          class="px-3 py-1 text-[11px] font-medium rounded-md transition-all duration-200 cursor-pointer"
           :class="activeSubTab === 'status'
-            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-            : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-blue-500/20'
+            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/20'"
         >
           <div class="flex items-center gap-1.5">
-            <div class="i-mdi-file-document-edit-outline text-sm" />
+            <div class="i-mdi-file-document-edit-outline text-xs" />
             {{ t('git.fileStatus') }}
             <span v-if="gitStore.getTotalChanges(activeProject.id) > 0"
-              class="px-1.5 py-0 rounded-full text-[10px] bg-blue-500/15 text-blue-600 dark:text-blue-400 font-bold leading-4">
+              class="px-1.5 py-0 rounded-full text-[9px] bg-blue-500/15 text-blue-600 dark:text-blue-400 font-bold leading-4 min-w-[16px] text-center">
               {{ gitStore.getTotalChanges(activeProject.id) }}
             </span>
           </div>
         </button>
         <button
           @click="activeSubTab = 'log'"
-          class="px-3 py-1.5 text-xs font-medium border-b-2 transition-all cursor-pointer"
+          class="px-3 py-1 text-[11px] font-medium rounded-md transition-all duration-200 cursor-pointer"
           :class="activeSubTab === 'log'
-            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-            : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-blue-500/20'
+            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100/60 dark:hover:bg-slate-800/20'"
         >
           <div class="flex items-center gap-1.5">
-            <div class="i-mdi-source-commit text-sm" />
+            <div class="i-mdi-source-commit text-xs" />
             {{ t('git.commitHistory') }}
           </div>
         </button>
@@ -176,7 +188,7 @@ function onDragEnd() {
           @open-stash="handleOpenStash"
         />
         <!-- Sidebar resize handle -->
-        <div class="w-[3px] hover:bg-blue-400/50 active:bg-blue-500/60 cursor-col-resize transition-colors shrink-0 bg-slate-200/60 dark:bg-slate-700/30"
+        <div class="w-[3px] hover:bg-blue-400/40 active:bg-blue-500/50 cursor-col-resize transition-colors duration-150 shrink-0 bg-slate-200/40 dark:bg-slate-700/20"
           @mousedown="onDragStart('sidebar', $event)" />
 
         <!-- Main content -->
@@ -190,7 +202,7 @@ function onDragEnd() {
                   <GitStatusPanel :project="activeProject" />
                 </div>
                 <!-- Commit resize handle -->
-                <div class="h-[3px] hover:bg-blue-400/50 active:bg-blue-500/60 cursor-row-resize transition-colors shrink-0 bg-slate-200/60 dark:bg-slate-700/30"
+                <div class="h-[3px] hover:bg-blue-400/40 active:bg-blue-500/50 cursor-row-resize transition-colors duration-150 shrink-0 bg-slate-200/40 dark:bg-slate-700/20"
                   @mousedown="onDragStart('commit', $event)" />
                 <!-- Commit message area -->
                 <div class="shrink-0 overflow-hidden"
@@ -199,7 +211,7 @@ function onDragEnd() {
                 </div>
               </div>
               <!-- File list resize handle -->
-              <div class="w-[3px] hover:bg-blue-400/50 active:bg-blue-500/60 cursor-col-resize transition-colors shrink-0 bg-slate-200/60 dark:bg-slate-700/30"
+              <div class="w-[3px] hover:bg-blue-400/40 active:bg-blue-500/50 cursor-col-resize transition-colors duration-150 shrink-0 bg-slate-200/40 dark:bg-slate-700/20"
                 @mousedown="onDragStart('fileList', $event)" />
               <!-- Diff view -->
               <GitDiffView class="flex-1 min-w-0" :project="activeProject" />
@@ -223,17 +235,21 @@ function onDragEnd() {
         v-model="showStashDialog"
         :project="activeProject"
       />
+      <GitRemoteSettingsDialog
+        v-model="showRemoteSettings"
+        :project="activeProject"
+      />
     </template>
 
     <!-- Not a Git repo -->
     <template v-else-if="activeProject">
       <div class="flex-1 flex items-center justify-center">
         <div class="text-center">
-          <div class="i-mdi-git text-6xl text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-          <p class="text-lg font-medium text-slate-500 dark:text-slate-400 mb-2">{{ t('git.notGitRepo') }}</p>
+          <div class="i-mdi-git text-6xl text-slate-300/60 dark:text-slate-600/40 mx-auto mb-5" />
+          <p class="text-base font-medium text-slate-500 dark:text-slate-400 mb-3">{{ t('git.notGitRepo') }}</p>
           <button
             @click="handleInitRepo"
-            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+            class="px-5 py-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer shadow-sm hover:shadow"
           >
             <div class="flex items-center gap-2">
               <div class="i-mdi-plus text-base" />

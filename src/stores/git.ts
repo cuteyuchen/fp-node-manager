@@ -245,8 +245,19 @@ export const useGitStore = defineStore('git', () => {
     operationLoading.value = true;
     try {
       const result = await api.gitCreateBranch(path, name, startPoint);
-      await refreshBranches(projectId, path);
-      await refreshLog(projectId, path);
+      await Promise.all([
+        refreshBranches(projectId, path),
+        refreshLog(projectId, path),
+      ]);
+
+      const created = getLocalBranches(projectId).some(branch => branch.name === name);
+      if (!created) {
+        await refreshAll(projectId, path);
+      }
+      const confirmed = getLocalBranches(projectId).some(branch => branch.name === name);
+      if (!confirmed) {
+        throw new Error(`Branch \"${name}\" was not created`);
+      }
       return result;
     } finally {
       operationLoading.value = false;
@@ -257,6 +268,17 @@ export const useGitStore = defineStore('git', () => {
     operationLoading.value = true;
     try {
       const result = await api.gitDeleteBranch(path, name, force);
+      await refreshBranches(projectId, path);
+      return result;
+    } finally {
+      operationLoading.value = false;
+    }
+  }
+
+  async function renameBranch(projectId: string, path: string, oldName: string, newName: string): Promise<string> {
+    operationLoading.value = true;
+    try {
+      const result = await api.gitRenameBranch(path, oldName, newName);
       await refreshBranches(projectId, path);
       return result;
     } finally {
@@ -360,6 +382,21 @@ export const useGitStore = defineStore('git', () => {
     await refreshTags(projectId, path);
   }
 
+  async function addRemote(projectId: string, path: string, name: string, url: string): Promise<void> {
+    await api.gitRemoteAdd(path, name, url);
+    await refreshRemotes(projectId, path);
+  }
+
+  async function updateRemoteUrl(projectId: string, path: string, name: string, url: string): Promise<void> {
+    await api.gitRemoteSetUrl(path, name, url);
+    await refreshRemotes(projectId, path);
+  }
+
+  async function removeRemote(projectId: string, path: string, name: string): Promise<void> {
+    await api.gitRemoteRemove(path, name);
+    await refreshRemotes(projectId, path);
+  }
+
   return {
     // State
     isGitRepo,
@@ -408,6 +445,7 @@ export const useGitStore = defineStore('git', () => {
     checkout,
     createBranch,
     deleteBranch,
+    renameBranch,
     merge,
     rebase,
     rmCached,
@@ -422,5 +460,8 @@ export const useGitStore = defineStore('git', () => {
     clearDiff,
     applyPatch,
     deleteTag,
+    addRemote,
+    updateRemoteUrl,
+    removeRemote,
   };
 });
