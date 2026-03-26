@@ -102,6 +102,8 @@ pub fn run() {
             git::git_delete_branch,
             git::git_rename_branch,
             git::git_history,
+            git::git_commit_files,
+            git::git_diff_commit_file,
             read_config_file,
             write_config_file,
             get_startup_args

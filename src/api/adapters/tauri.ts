@@ -5,7 +5,7 @@ import { open as openDialogFn, save as saveDialogFn } from '@tauri-apps/plugin-d
 import { openUrl as openUrlFn } from '@tauri-apps/plugin-opener';
 import { readTextFile as readTextFileFn, writeTextFile as writeTextFileFn } from '@tauri-apps/plugin-fs';
 import type { PlatformAPI, ProjectInfo, TerminalInfo } from '../types';
-import type { NodeVersion, GitStatusResult, GitBranch, GitCommit, GitSummary } from '../../types';
+import type { NodeVersion, GitStatusResult, GitBranch, GitCommit, GitSummary, GitCommitFile } from '../../types';
 
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
@@ -280,5 +280,13 @@ export class TauriAdapter implements PlatformAPI {
 
     async gitHistory(path: string, maxCount?: number): Promise<GitCommit[]> {
         return invoke('git_history', { path, maxCount });
+    }
+
+    async gitCommitFiles(path: string, hash: string): Promise<GitCommitFile[]> {
+        return invoke('git_commit_files', { path, hash });
+    }
+
+    async gitDiffCommitFile(path: string, hash: string, file: string): Promise<string> {
+        return invoke('git_diff_commit_file', { path, hash, file });
     }
 }

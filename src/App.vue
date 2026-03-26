@@ -14,6 +14,7 @@ import { loadData, saveData } from './utils/persistence';
 import { useProjectStore } from './stores/project';
 import { useSettingsStore } from './stores/settings';
 import { useNodeStore } from './stores/node';
+import { useGitStore } from './stores/git';
 import type { Project } from './types';
 import { normalizeNvmVersion, findInstalledNodeVersion } from './utils/nvm';
 
@@ -224,6 +225,16 @@ onMounted(async () => {
   
   // Auto refresh projects
   useProjectStore().refreshAll();
+
+  // Auto refresh git status for the active project on startup
+  const projectStore = useProjectStore();
+  const gitStore = useGitStore();
+  const activeProject = projectStore.projects.find(p => p.id === projectStore.activeProjectId);
+  if (activeProject) {
+    gitStore.checkGitRepo(activeProject.id, activeProject.path).then(isRepo => {
+      if (isRepo) gitStore.refreshSummaryAndStatus(activeProject.id, activeProject.path);
+    });
+  }
   
   // Handle Startup Args / uTools Plugin Enter
   if (target === 'utools') {

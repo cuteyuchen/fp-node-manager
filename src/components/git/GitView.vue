@@ -10,6 +10,7 @@ import GitCommitArea from './GitCommitArea.vue';
 import GitDiffView from './GitDiffView.vue';
 import GitHistory from './GitHistory.vue';
 import GitBranchDialog from './GitBranchDialog.vue';
+import GitCommitFileList from './GitCommitFileList.vue';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
@@ -111,9 +112,9 @@ const tabs = computed(() => [
       <!-- Content area -->
       <div class="flex-1 flex min-h-0">
         <!-- Left panel -->
-        <div class="w-[300px] flex flex-col border-r border-slate-200/40 dark:border-slate-700/30 shrink-0">
+        <div class="w-[260px] flex flex-col border-r border-slate-200/40 dark:border-slate-700/30 shrink-0">
           <template v-if="activeTab === 'changes'">
-            <div class="flex-1 min-h-0 overflow-auto">
+            <div class="flex-1 min-h-0 overflow-hidden">
               <GitStatusPanel :project="activeProject" />
             </div>
             <GitCommitArea :project="activeProject" />
@@ -121,6 +122,11 @@ const tabs = computed(() => [
           <template v-else>
             <GitHistory :project="activeProject" />
           </template>
+        </div>
+
+        <!-- Middle panel: commit file list (history tab only) -->
+        <div v-if="activeTab === 'history'" class="w-[220px] flex flex-col border-r border-slate-200/40 dark:border-slate-700/30 shrink-0">
+          <GitCommitFileList :project="activeProject" />
         </div>
 
         <!-- Right panel: shared diff view -->

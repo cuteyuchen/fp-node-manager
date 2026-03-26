@@ -5,6 +5,7 @@ import type {
   GitStatusResult,
   GitBranch,
   GitCommit,
+  GitCommitFile,
   GitSummary,
 } from '../types';
 
@@ -20,6 +21,11 @@ export const useGitStore = defineStore('git', () => {
   const selectedDiff = ref('');
   const selectedDiffFile = ref('');
   const selectedDiffStaged = ref(false);
+
+  // Commit file lists cached by projectId -> hash -> files
+  const commitFiles = ref<Record<string, Record<string, GitCommitFile[]>>>({});
+  // Currently selected commit hash in history
+  const selectedCommitHash = ref<Record<string, string>>({});
 
   // Loading states
   const loading = ref(false);
@@ -240,6 +246,77 @@ export const useGitStore = defineStore('git', () => {
     return result;
   }
 
+  async function refreshCommitFiles(projectId: string, path: string, hash: string): Promise<GitCommitFile[]> {
+    try {
+      const files = await api.gitCommitFiles(path, hash);
+      if (!commitFiles.value[projectId]) {
+        commitFiles.value[projectId] = {};
+      }
+      commitFiles.value[projectId][hash] = files;
+      return files;
+    } catch {
+      return [];
+    }
+  }
+
+  function getCommitFiles(projectId: string, hash: string): GitCommitFile[] {
+    return commitFiles.value[projectId]?.[hash] || [];
+  }
+
+  async function getDiffCommitFile(path: string, hash: string, file: string): Promise<string> {
+    const result = await api.gitDiffCommitFile(path, hash, file);
+    selectedDiff.value = result;
+    selectedDiffFile.value = file;
+    return result;
+  }
+
+  async function generateAiCommitMessage(
+    projectId: string,
+    path: string,
+    settings: {
+      baseUrl: string;
+      apiKey: string;
+      model: string;
+      promptTemplate?: string;
+    }
+  ): Promise<string> {
+    // Get staged diff
+    const diff = await api.gitDiff(path, undefined, true);
+    if (!diff.trim()) {
+      throw new Error('no_staged');
+    }
+
+    const systemPrompt = settings.promptTemplate?.trim() ||
+      'You are an expert developer. Write a concise, meaningful git commit message in English summarizing the changes. Output only the commit message, no extra text.';
+
+    const url = settings.baseUrl.replace(/\/$/, '') + '/chat/completions';
+    const response = await globalThis.fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${settings.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Git diff:\n\`\`\`\n${diff}\n\`\`\`` },
+        ],
+        max_tokens: 200,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || response.statusText);
+    }
+
+    const data = await response.json();
+    void projectId; // suppress unused warning
+    return data.choices?.[0]?.message?.content?.trim() || '';
+  }
+
   async function discardFiles(projectId: string, path: string, files: string[]): Promise<void> {
     await api.gitDiscard(path, files);
     await refreshStatus(projectId, path);
@@ -266,6 +343,8 @@ export const useGitStore = defineStore('git', () => {
     selectedDiff,
     selectedDiffFile,
     selectedDiffStaged,
+    commitFiles,
+    selectedCommitHash,
     loading,
     operationLoading,
 
@@ -276,6 +355,7 @@ export const useGitStore = defineStore('git', () => {
     getLocalBranches,
     getRemoteBranches,
     getTotalChanges,
+    getCommitFiles,
 
     // Refresh
     checkGitRepo,
@@ -285,6 +365,7 @@ export const useGitStore = defineStore('git', () => {
     refreshSummaryAndStatus,
     refreshHistory,
     refreshBranches,
+    refreshCommitFiles,
 
     // Operations
     stageFiles,
@@ -301,8 +382,10 @@ export const useGitStore = defineStore('git', () => {
     renameBranch,
     getDiff,
     getDiffCommit,
+    getDiffCommitFile,
     discardFiles,
     discardUntracked,
     clearDiff,
+    generateAiCommitMessage,
   };
 });

@@ -1,4 +1,4 @@
-import type { NodeVersion, GitStatusResult, GitBranch, GitCommit, GitSummary } from '../types';
+import type { NodeVersion, GitStatusResult, GitBranch, GitCommit, GitSummary, GitCommitFile } from '../types';
 
 export interface ProjectInfo {
     name: string;
@@ -105,4 +105,6 @@ export interface PlatformAPI {
     gitDeleteBranch(path: string, name: string, force?: boolean): Promise<string>;
     gitRenameBranch(path: string, oldName: string, newName: string): Promise<string>;
     gitHistory(path: string, maxCount?: number): Promise<GitCommit[]>;
+    gitCommitFiles(path: string, hash: string): Promise<GitCommitFile[]>;
+    gitDiffCommitFile(path: string, hash: string, file: string): Promise<string>;
 }

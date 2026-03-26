@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useGitStore } from '../../stores/git';
+import { useSettingsStore } from '../../stores/settings';
 import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import type { Project } from '../../types';
@@ -11,13 +12,17 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const gitStore = useGitStore();
+const settingsStore = useSettingsStore();
 
 const commitMessage = ref('');
+const aiGenerating = ref(false);
 
 const stagedFiles = computed(() => {
   const s = gitStore.getStatus(props.project.id);
   return s?.staged || [];
 });
+
+const aiEnabled = computed(() => settingsStore.settings.gitAiEnabled);
 
 async function handleCommit() {
   if (!commitMessage.value.trim()) {
@@ -36,24 +41,66 @@ async function handleCommit() {
     ElMessage.error(t('git.operationFailed', { error: String(e) }));
   }
 }
+
+async function handleAiGenerate() {
+  const s = settingsStore.settings;
+  if (!s.gitAiApiKey?.trim()) {
+    ElMessage.warning(t('git.aiConfigMissing'));
+    return;
+  }
+  aiGenerating.value = true;
+  try {
+    const msg = await gitStore.generateAiCommitMessage(props.project.id, props.project.path, {
+      baseUrl: s.gitAiBaseUrl || 'https://api.openai.com/v1',
+      apiKey: s.gitAiApiKey,
+      model: s.gitAiModel || 'gpt-4o-mini',
+      promptTemplate: s.gitAiPromptTemplate,
+    });
+    if (msg) {
+      commitMessage.value = msg;
+      ElMessage.success(t('git.aiSuccess'));
+    }
+  } catch (e: any) {
+    const msg = String(e);
+    if (msg.includes('no_staged')) {
+      ElMessage.warning(t('git.aiNoStaged'));
+    } else {
+      ElMessage.error(t('git.aiError', { error: msg }));
+    }
+  } finally {
+    aiGenerating.value = false;
+  }
+}
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden bg-white/40 dark:bg-[#0f172a]/40">
+  <div class="flex flex-col shrink-0 overflow-hidden bg-white/40 dark:bg-[#0f172a]/40 border-t border-slate-200/40 dark:border-slate-700/20">
     <!-- Header -->
     <div class="flex items-center justify-between px-2.5 py-1 border-b border-slate-200/40 dark:border-slate-700/20 shrink-0">
       <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
         <div class="i-mdi-message-text-outline text-xs text-blue-500/60" />
         {{ t('git.commitMessage') }}
       </span>
-      <span v-if="stagedFiles.length > 0" class="text-[9px] text-blue-500/80 bg-blue-500/8 px-1.5 py-0.5 rounded-full leading-none font-medium">{{ stagedFiles.length }} {{ t('git.staged') }}</span>
+      <div class="flex items-center gap-1">
+        <button
+          v-if="aiEnabled"
+          @click="handleAiGenerate"
+          :disabled="aiGenerating"
+          class="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          :title="t('git.aiGenerate')"
+        >
+          <div :class="aiGenerating ? 'i-mdi-loading animate-spin' : 'i-mdi-auto-fix'" class="text-xs" />
+          {{ aiGenerating ? t('git.aiGenerating') : t('git.aiGenerate') }}
+        </button>
+        <span v-if="stagedFiles.length > 0" class="text-[9px] text-blue-500/80 bg-blue-500/8 px-1.5 py-0.5 rounded-full leading-none font-medium">{{ stagedFiles.length }} {{ t('git.staged') }}</span>
+      </div>
     </div>
     <!-- Textarea -->
-    <div class="flex-1 p-1.5 overflow-hidden min-h-0">
+    <div class="p-1.5 flex-1 min-h-0">
       <textarea
         v-model="commitMessage"
         :placeholder="t('git.commitPlaceholder')"
-        class="w-full h-full px-2 py-1.5 text-[11px] rounded-md border border-slate-200/60 dark:border-slate-700/30 bg-slate-50/50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500/30 placeholder:text-slate-400/40 transition-all duration-150"
+        class="w-full h-full min-h-[60px] px-2 py-1.5 text-[11px] rounded-md border border-slate-200/60 dark:border-slate-700/30 bg-slate-50/50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500/30 placeholder:text-slate-400/40 transition-all duration-150"
         @keydown.ctrl.enter="handleCommit"
       />
     </div>

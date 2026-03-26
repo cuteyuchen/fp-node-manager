@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useGitStore } from '../../stores/git';
 import { useI18n } from 'vue-i18n';
 import type { Project, GitCommit } from '../../types';
@@ -11,12 +11,14 @@ const props = defineProps<{
 const { t } = useI18n();
 const gitStore = useGitStore();
 
-const selectedCommit = ref<GitCommit | null>(null);
+const selectedHash = computed(() => gitStore.selectedCommitHash[props.project.id] || '');
 const commits = computed(() => gitStore.history[props.project.id] || []);
 
 async function selectCommit(commit: GitCommit) {
-  selectedCommit.value = commit;
-  await gitStore.getDiffCommit(props.project.path, commit.hash);
+  gitStore.selectedCommitHash[props.project.id] = commit.hash;
+  gitStore.clearDiff();
+  // Load commit files; the GitCommitFileList component will pick up the changes
+  await gitStore.refreshCommitFiles(props.project.id, props.project.path, commit.hash);
 }
 
 async function loadMore() {
@@ -47,7 +49,7 @@ function shortRefs(refs: string[]): string[] {
 
 // Clear selection on project change
 watch(() => props.project.id, () => {
-  selectedCommit.value = null;
+  gitStore.selectedCommitHash[props.project.id] = '';
   gitStore.clearDiff();
 });
 </script>
@@ -67,13 +69,13 @@ watch(() => props.project.id, () => {
         :key="commit.hash"
         @click="selectCommit(commit)"
         class="flex items-start gap-2 px-3 py-2 cursor-pointer border-b border-slate-200/20 dark:border-slate-700/15 transition-colors"
-        :class="selectedCommit?.hash === commit.hash
+        :class="selectedHash === commit.hash
           ? 'bg-blue-500/8'
           : 'hover:bg-slate-100/50 dark:hover:bg-slate-800/20'"
       >
         <!-- Commit dot -->
         <div class="mt-1.5 w-2 h-2 rounded-full shrink-0"
-          :class="selectedCommit?.hash === commit.hash ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-500'" />
+          :class="selectedHash === commit.hash ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-500'" />
 
         <!-- Commit info -->
         <div class="flex-1 min-w-0">

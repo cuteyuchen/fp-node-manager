@@ -98,7 +98,18 @@ export default {
     autoUpdate: '自动检查更新',
     autoUpdateHint: '应用启动时自动检查新版本。',
     releases: '版本历史',
-    version: '当前版本'
+    version: '当前版本',
+    // AI commit
+    gitAi: 'AI 提交信息生成',
+    gitAiEnabled: '启用 AI 生成',
+    gitAiBaseUrl: 'API 地址',
+    gitAiBaseUrlPlaceholder: 'https://api.openai.com/v1',
+    gitAiApiKey: 'API Key',
+    gitAiApiKeyPlaceholder: '输入 API Key',
+    gitAiModel: '模型',
+    gitAiModelPlaceholder: 'gpt-4o-mini',
+    gitAiPromptTemplate: '自定义提示词（可选）',
+    gitAiPromptPlaceholder: '留空则使用默认提示词',
   },
   project: {
     name: '项目名称',
@@ -283,6 +294,15 @@ export default {
     commitFiles: '个文件变更',
     copyHash: '复制哈希',
     copyHashSuccess: '哈希已复制',
-    noFileSelected: '选择文件以查看差异'
+    noFileSelected: '选择文件以查看差异',
+    // AI commit message
+    aiGenerate: 'AI 生成',
+    aiGenerating: '生成中...',
+    aiSuccess: '已生成提交信息',
+    aiError: 'AI 生成失败：{error}',
+    aiNoStaged: '没有已暂存的文件，无法生成',
+    aiConfigMissing: '请先在设置中配置 API Key',
+    // Commit file list
+    selectCommitToView: '选择一个提交以查看文件',
   }
 }

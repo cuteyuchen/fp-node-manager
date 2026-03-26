@@ -14,6 +14,12 @@ export interface Settings {
   locale: 'zh' | 'en';
   themeMode: 'dark' | 'light' | 'auto';
   autoUpdate: boolean;
+  // AI commit message generation
+  gitAiEnabled?: boolean;
+  gitAiBaseUrl?: string;
+  gitAiApiKey?: string;
+  gitAiModel?: string;
+  gitAiPromptTemplate?: string;
 }
 
 export interface NodeVersion {
@@ -71,4 +77,10 @@ export interface GitSummary {
   behind: number;
   has_remote: boolean;
   remote_name?: string;
+}
+
+export interface GitCommitFile {
+  path: string;
+  status: string; // 'A' | 'M' | 'D' | 'R' | 'C'
+  old_path?: string;
 }

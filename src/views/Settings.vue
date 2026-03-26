@@ -272,6 +272,55 @@ function openReleases() {
                 {{ t('settings.dataHint') }}
             </div>
         </el-card>
+
+        <!-- AI Commit Message Configuration (spans full width) -->
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm lg:col-span-2">
+            <template #header>
+                <div class="font-bold flex items-center gap-2">
+                    <div class="i-mdi-auto-fix text-violet-500" />
+                    {{ t('settings.gitAi') }}
+                </div>
+            </template>
+            <el-form label-position="top">
+                <el-form-item :label="t('settings.gitAiEnabled')">
+                    <el-switch v-model="settingsStore.settings.gitAiEnabled" />
+                </el-form-item>
+                <template v-if="settingsStore.settings.gitAiEnabled">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-6">
+                        <el-form-item :label="t('settings.gitAiBaseUrl')">
+                            <el-input
+                                v-model="settingsStore.settings.gitAiBaseUrl"
+                                :placeholder="t('settings.gitAiBaseUrlPlaceholder')"
+                                clearable
+                            />
+                        </el-form-item>
+                        <el-form-item :label="t('settings.gitAiModel')">
+                            <el-input
+                                v-model="settingsStore.settings.gitAiModel"
+                                :placeholder="t('settings.gitAiModelPlaceholder')"
+                                clearable
+                            />
+                        </el-form-item>
+                        <el-form-item :label="t('settings.gitAiApiKey')" class="lg:col-span-2">
+                            <el-input
+                                v-model="settingsStore.settings.gitAiApiKey"
+                                type="password"
+                                show-password
+                                :placeholder="t('settings.gitAiApiKeyPlaceholder')"
+                            />
+                        </el-form-item>
+                        <el-form-item :label="t('settings.gitAiPromptTemplate')" class="lg:col-span-2">
+                            <el-input
+                                v-model="settingsStore.settings.gitAiPromptTemplate"
+                                type="textarea"
+                                :rows="3"
+                                :placeholder="t('settings.gitAiPromptPlaceholder')"
+                            />
+                        </el-form-item>
+                    </div>
+                </template>
+            </el-form>
+        </el-card>
     </div>
   </div>
 </template>

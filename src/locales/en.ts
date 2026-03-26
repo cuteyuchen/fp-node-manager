@@ -99,7 +99,18 @@ export default {
     autoUpdate: 'Auto Check Updates',
     autoUpdateHint: 'Automatically check for updates on startup.',
     releases: 'Release History',
-    version: 'Current Version'
+    version: 'Current Version',
+    // AI commit
+    gitAi: 'AI Commit Message',
+    gitAiEnabled: 'Enable AI Generation',
+    gitAiBaseUrl: 'API Base URL',
+    gitAiBaseUrlPlaceholder: 'https://api.openai.com/v1',
+    gitAiApiKey: 'API Key',
+    gitAiApiKeyPlaceholder: 'Enter API Key',
+    gitAiModel: 'Model',
+    gitAiModelPlaceholder: 'gpt-4o-mini',
+    gitAiPromptTemplate: 'Custom Prompt (optional)',
+    gitAiPromptPlaceholder: 'Leave empty to use default prompt',
   },
   project: {
     name: 'Project Name',
@@ -281,6 +292,15 @@ export default {
     commitFiles: 'files changed',
     copyHash: 'Copy Hash',
     copyHashSuccess: 'Hash copied',
-    noFileSelected: 'Select a file to view diff'
+    noFileSelected: 'Select a file to view diff',
+    // AI commit message
+    aiGenerate: 'AI Generate',
+    aiGenerating: 'Generating...',
+    aiSuccess: 'Commit message generated',
+    aiError: 'AI generation failed: {error}',
+    aiNoStaged: 'No staged files to generate message from',
+    aiConfigMissing: 'Please configure API Key in Settings first',
+    // Commit file list
+    selectCommitToView: 'Select a commit to view files',
   }
 }

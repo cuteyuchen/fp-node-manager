@@ -899,3 +899,59 @@ pub fn git_history(
 
     Ok(commits)
 }
+
+// ─── Commit File List ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GitCommitFile {
+    pub path: String,
+    pub status: String, // "A" | "M" | "D" | "R" | "C"
+    pub old_path: Option<String>,
+}
+
+#[tauri::command]
+pub fn git_commit_files(path: String, hash: String) -> Result<Vec<GitCommitFile>, String> {
+    let output = run_git_relaxed(&path, &["show", "--name-status", "--format=", &hash])?;
+    let mut files = Vec::new();
+
+    for line in output.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.splitn(3, '\t').collect();
+        if parts.is_empty() {
+            continue;
+        }
+        let status_raw = parts[0];
+        let status_char = &status_raw[..1];
+
+        match status_char {
+            "R" | "C" => {
+                if parts.len() >= 3 {
+                    files.push(GitCommitFile {
+                        path: parts[2].to_string(),
+                        status: status_char.to_string(),
+                        old_path: Some(parts[1].to_string()),
+                    });
+                }
+            }
+            _ => {
+                if parts.len() >= 2 {
+                    files.push(GitCommitFile {
+                        path: parts[1].to_string(),
+                        status: status_char.to_string(),
+                        old_path: None,
+                    });
+                }
+            }
+        }
+    }
+
+    Ok(files)
+}
+
+#[tauri::command]
+pub fn git_diff_commit_file(path: String, hash: String, file: String) -> Result<String, String> {
+    run_git_relaxed(&path, &["show", "--format=", "--patch", &hash, "--", &file])
+}

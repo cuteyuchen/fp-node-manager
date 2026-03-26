@@ -11,7 +11,12 @@ export const useSettingsStore = defineStore('settings', () => {
     defaultTerminal: 'cmd',
     locale: 'zh',
     themeMode: 'auto',
-    autoUpdate: true
+    autoUpdate: true,
+    gitAiEnabled: false,
+    gitAiBaseUrl: 'https://api.openai.com/v1',
+    gitAiApiKey: '',
+    gitAiModel: 'gpt-4o-mini',
+    gitAiPromptTemplate: '',
   });
 
   const availableTerminals = ref<TerminalInfo[]>([]);

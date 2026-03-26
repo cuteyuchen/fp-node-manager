@@ -1,5 +1,5 @@
 import type { PlatformAPI, ProjectInfo, TerminalInfo } from '../types';
-import type { NodeVersion, GitStatusResult, GitBranch, GitCommit, GitSummary } from '../../types';
+import type { NodeVersion, GitStatusResult, GitBranch, GitCommit, GitSummary, GitCommitFile } from '../../types';
 
 // Declare global interface for uTools services
 declare global {
@@ -164,4 +164,6 @@ export class UToolsAdapter implements PlatformAPI {
   async gitDeleteBranch(_path: string, _name: string, _force?: boolean): Promise<string> { this.gitNotSupported(); }
   async gitRenameBranch(_path: string, _oldName: string, _newName: string): Promise<string> { this.gitNotSupported(); }
   async gitHistory(_path: string, _maxCount?: number): Promise<GitCommit[]> { this.gitNotSupported(); }
+  async gitCommitFiles(_path: string, _hash: string): Promise<GitCommitFile[]> { this.gitNotSupported(); }
+  async gitDiffCommitFile(_path: string, _hash: string, _file: string): Promise<string> { this.gitNotSupported(); }
 }
