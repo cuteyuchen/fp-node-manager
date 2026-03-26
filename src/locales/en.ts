@@ -47,7 +47,9 @@ export default {
     clickRunHint: 'Click run buttons above to start scripts',
     waitingForOutput: 'Waiting for output...',
     dropToImport: 'Drop folder here to import project',
-    console: 'Console'
+    console: 'Console',
+    pin: 'Pin to Top',
+    unpin: 'Unpin'
   },
   nodes: {
     title: 'Node Version Manager',
@@ -111,6 +113,16 @@ export default {
     gitAiModelPlaceholder: 'gpt-4o-mini',
     gitAiPromptTemplate: 'Custom Prompt (optional)',
     gitAiPromptPlaceholder: 'Leave empty to use default prompt',
+    gitAiTestBtn: 'Test Connection',
+    gitAiTestSuccess: 'Connection successful',
+    gitAiTestAuthError: 'Authentication failed: check your API Key',
+    gitAiTestModelNotFound: 'Model not found: check model name',
+    gitAiTestRateLimit: 'Rate limited, please try again later',
+    gitAiTestTimeout: 'Connection timeout: unable to reach API server',
+    gitAiTestUnreachable: 'Unreachable: check API base URL',
+    gitAiTestHttpError: 'HTTP Error {status}: {error}',
+    gitAiTestError: 'Test failed: {error}',
+    gitAiTestMissingConfig: 'Please fill in API URL, API Key and Model',
   },
   project: {
     name: 'Project Name',
@@ -126,7 +138,12 @@ export default {
     invalidNvmrc: 'Invalid .nvmrc content, auto install skipped',
     autoInstallStart: 'Auto installing Node {version}...',
     autoInstallSuccess: 'Node {version} installed automatically',
-    autoInstallFailed: 'Failed to auto install Node {version}'
+    autoInstallFailed: 'Failed to auto install Node {version}',
+    typeOther: 'Other',
+    customCommands: 'Custom Commands',
+    commandName: 'Command Name',
+    commandContent: 'Command',
+    addCommand: 'Add Command'
   },
   update: {
     title: 'New Version Found',

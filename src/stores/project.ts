@@ -104,15 +104,11 @@ export const useProjectStore = defineStore('project', () => {
     if (nodePath === 'System Default') nodePath = '';
 
     try {
-        // Initialize logs for this runId if needed, or clear if we want fresh logs per run
-        // But maybe user wants to see history?
-        // Let's clear for now to avoid confusion.
         logs.value[runId] = []; 
         
-        activeProjectId.value = project.id; // Auto select project
+        activeProjectId.value = project.id;
         runningStatus.value[runId] = true;
         
-        // Log debug info
         logs.value[runId].push(`[Runner] Starting script: ${script}`);
         logs.value[runId].push(`[Runner] Project: ${project.name}`);
         logs.value[runId].push(`[Runner] Package Manager: ${project.packageManager || 'npm'}`);
@@ -133,6 +129,31 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  async function runCustomCommand(project: Project, commandId: string) {
+    const cmd = project.customCommands?.find(c => c.id === commandId);
+    if (!cmd) return;
+
+    const runId = `${project.id}:${cmd.id}`;
+
+    if (runningStatus.value[runId]) return;
+
+    try {
+        logs.value[runId] = [];
+        activeProjectId.value = project.id;
+        runningStatus.value[runId] = true;
+
+        logs.value[runId].push(`[Runner] Starting custom command: ${cmd.name}`);
+        logs.value[runId].push(`[Runner] Command: ${cmd.command}`);
+        logs.value[runId].push(`[Runner] Project: ${project.name}`);
+
+        await api.runCustomCommand(runId, project.path, cmd.command);
+    } catch (e) {
+        console.error(e);
+        runningStatus.value[runId] = false;
+        logs.value[runId].push(`Error starting command: ${e}`);
+    }
+  }
+
   async function stopProject(project: Project, script: string) {
       const runId = `${project.id}:${script}`;
       try {
@@ -150,13 +171,34 @@ export const useProjectStore = defineStore('project', () => {
     const updates = await Promise.all(projects.value.map(async (p) => {
         try {
             const info: any = await api.scanProject(p.path);
-            return { ...p, scripts: info.scripts || [] };
+            if (p.type === 'node') {
+                return { ...p, scripts: info.scripts || [] };
+            }
+            return p;
         } catch (e) {
             console.error(`Failed to refresh project ${p.name}`, e);
             return p;
         }
     }));
     projects.value = updates;
+  }
+
+  function pinProject(id: string) {
+    const project = projects.value.find(p => p.id === id);
+    if (!project) return;
+    project.pinned = true;
+    // Set pinOrder to be the max + 1 among pinned projects
+    const maxOrder = projects.value
+      .filter(p => p.pinned && p.id !== id)
+      .reduce((max, p) => Math.max(max, p.pinOrder ?? 0), 0);
+    project.pinOrder = maxOrder + 1;
+  }
+
+  function unpinProject(id: string) {
+    const project = projects.value.find(p => p.id === id);
+    if (!project) return;
+    project.pinned = false;
+    project.pinOrder = undefined;
   }
 
   return {
@@ -168,8 +210,11 @@ export const useProjectStore = defineStore('project', () => {
     updateProject,
     removeProject,
     runProject,
+    runCustomCommand,
     stopProject,
     clearLog,
-    refreshAll
+    refreshAll,
+    pinProject,
+    unpinProject
   };
 });

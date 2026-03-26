@@ -1,11 +1,20 @@
+export interface CustomCommand {
+  id: string;
+  name: string;
+  command: string;
+}
+
 export interface Project {
   id: string;
   name: string;
   path: string;
-  type: 'node' | 'static';
-  nodeVersion: string;
-  packageManager: 'npm' | 'yarn' | 'pnpm' | 'cnpm';
-  scripts: string[];
+  type: 'node' | 'static' | 'other';
+  nodeVersion?: string;
+  packageManager?: 'npm' | 'yarn' | 'pnpm' | 'cnpm';
+  scripts?: string[];
+  customCommands?: CustomCommand[];
+  pinned?: boolean;
+  pinOrder?: number;
 }
 
 export interface Settings {

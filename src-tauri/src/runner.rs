@@ -484,6 +484,178 @@ pub fn stop_project_command(state: State<'_, ProcessState>, id: String) -> Resul
 }
 
 #[tauri::command]
+pub fn run_custom_command(
+    app: AppHandle,
+    state: State<'_, ProcessState>,
+    id: String,
+    path: String,
+    command: String,
+) -> Result<(), String> {
+    let processes = state.processes.clone();
+    let mut processes_lock = processes.lock().map_err(|e| e.to_string())?;
+
+    if processes_lock.contains_key(&id) {
+        return Err("Command is already running".to_string());
+    }
+
+    // Setup Log File
+    let base_log_dir = if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(parent) = exe_path.parent() {
+            parent.join("logs")
+        } else {
+            app.path().app_log_dir().unwrap_or_else(|_| std::path::PathBuf::from("logs"))
+        }
+    } else {
+        app.path().app_log_dir().unwrap_or_else(|_| std::path::PathBuf::from("logs"))
+    };
+
+    let project_path_buf = std::path::Path::new(&path);
+    let project_name = project_path_buf
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "unknown_project".to_string());
+
+    let safe_project_name = project_name.replace(|c: char| {
+        matches!(c, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*')
+    }, "_");
+
+    let project_log_dir = base_log_dir.join(&safe_project_name);
+    if !project_log_dir.exists() {
+        fs::create_dir_all(&project_log_dir).map_err(|e| e.to_string())?;
+    }
+
+    // Use a hash of the command as filename to avoid path issues
+    let safe_cmd = command.replace(|c: char| {
+        matches!(c, '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*')
+    }, "_");
+    let log_file_path = project_log_dir.join(format!("custom_{}.log", &safe_cmd[..safe_cmd.len().min(50)]));
+
+    let log_manager = Arc::new(Mutex::new(LogManager::new(&log_file_path)?));
+
+    let mut command_builder: Command;
+
+    #[cfg(target_os = "windows")]
+    {
+        command_builder = Command::new("cmd");
+        command_builder
+            .raw_arg(format!(" /C \"{}\"", command))
+            .creation_flags(CREATE_NO_WINDOW);
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        command_builder = Command::new("sh");
+        command_builder
+            .arg("-c")
+            .arg(&command);
+    }
+
+    command_builder
+        .current_dir(&path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    // Emit initial log
+    let _ = app.emit(
+        "project-output",
+        serde_json::json!({
+            "id": id,
+            "type": "stdout",
+            "data": format!("Executing: {}", command)
+        }),
+    );
+
+    if let Ok(mut manager) = log_manager.lock() {
+        manager.append(format!("Executing: {}", command));
+    }
+
+    let mut child = command_builder.spawn().map_err(|e| e.to_string())?;
+    let pid = child.id();
+
+    processes_lock.insert(id.clone(), pid);
+    drop(processes_lock);
+
+    let stdout = child.stdout.take().unwrap();
+    let stderr = child.stderr.take().unwrap();
+
+    let id_clone1 = id.clone();
+    let app_clone1 = app.clone();
+    let log_manager1 = log_manager.clone();
+    thread::spawn(move || {
+        let mut reader = BufReader::new(stdout);
+        let mut buf = Vec::new();
+        while let Ok(n) = reader.read_until(b'\n', &mut buf) {
+            if n == 0 { break; }
+            let line = String::from_utf8_lossy(&buf);
+            let line_str = line.trim_end();
+
+            let _ = app_clone1.emit(
+                "project-output",
+                serde_json::json!({
+                    "id": id_clone1,
+                    "type": "stdout",
+                    "data": line_str
+                }),
+            );
+
+            if let Ok(mut manager) = log_manager1.lock() {
+                manager.append(line_str.to_string());
+            }
+            buf.clear();
+        }
+    });
+
+    let id_clone2 = id.clone();
+    let app_clone2 = app.clone();
+    let log_manager2 = log_manager.clone();
+    thread::spawn(move || {
+        let mut reader = BufReader::new(stderr);
+        let mut buf = Vec::new();
+        while let Ok(n) = reader.read_until(b'\n', &mut buf) {
+            if n == 0 { break; }
+            let line = String::from_utf8_lossy(&buf);
+            let line_str = line.trim_end();
+
+            let _ = app_clone2.emit(
+                "project-output",
+                serde_json::json!({
+                    "id": id_clone2,
+                    "type": "stderr",
+                    "data": line_str
+                }),
+            );
+
+            if let Ok(mut manager) = log_manager2.lock() {
+                manager.append(format!("ERR: {}", line_str));
+            }
+            buf.clear();
+        }
+    });
+
+    let id_clone3 = id.clone();
+    let app_clone3 = app.clone();
+    let processes_clone = state.processes.clone();
+    let log_manager3 = log_manager.clone();
+    thread::spawn(move || {
+        let _ = child.wait();
+        if let Ok(mut lock) = processes_clone.lock() {
+            lock.remove(&id_clone3);
+        }
+
+        if let Ok(mut manager) = log_manager3.lock() {
+            manager.rewrite_file();
+        }
+
+        let _ = app_clone3.emit(
+            "project-exit",
+            serde_json::json!({ "id": id_clone3 }),
+        );
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn open_in_editor(path: String, editor: String) -> Result<(), String> {
     let editor = editor.trim().trim_matches('"');
     let editor_cmd = if editor.is_empty() { "code" } else { editor };

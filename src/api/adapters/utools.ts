@@ -31,6 +31,9 @@ export class UToolsAdapter implements PlatformAPI {
   runProjectCommand(id: string, path: string, script: string, packageManager: string, nodePath: string): Promise<void> {
     return this.service.runProjectCommand(id, path, script, packageManager, nodePath);
   }
+  runCustomCommand(id: string, path: string, command: string): Promise<void> {
+    return this.service.runCustomCommand(id, path, command);
+  }
   stopProjectCommand(id: string): Promise<void> { return this.service.stopProjectCommand(id); }
 
   openInEditor(path: string, editor?: string): Promise<void> { return this.service.openInEditor(path, editor); }

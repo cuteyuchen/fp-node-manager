@@ -16,8 +16,18 @@ const settingsStore = useSettingsStore();
 const isActive = computed(() => store.activeProjectId === props.project.id);
 const isRunning = computed(() => {
     // Check if any script in this project is running
-    if (!props.project.scripts) return false;
-    return props.project.scripts.some(s => store.runningStatus[`${props.project.id}:${s}`]);
+    if (props.project.scripts?.length) {
+        if (props.project.scripts.some(s => store.runningStatus[`${props.project.id}:${s}`])) {
+            return true;
+        }
+    }
+    // Check if any custom command is running
+    if (props.project.customCommands?.length) {
+        if (props.project.customCommands.some(c => store.runningStatus[`${props.project.id}:${c.id}`])) {
+            return true;
+        }
+    }
+    return false;
 });
 
 function handleClick() {
@@ -26,6 +36,18 @@ function handleClick() {
 
 function handleRun(script: string) {
     store.runProject(props.project, script);
+}
+
+function handleRunCustom(commandId: string) {
+    store.runCustomCommand(props.project, commandId);
+}
+
+function handleTogglePin() {
+    if (props.project.pinned) {
+        store.unpinProject(props.project.id);
+    } else {
+        store.pinProject(props.project.id);
+    }
 }
 
 function handleDelete() {
@@ -80,6 +102,12 @@ async function openFolder() {
             ? 'bg-blue-50 dark:bg-blue-600/10 border-blue-200 dark:border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
             : 'bg-slate-50 dark:bg-[#1e293b]/40 border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-[#1e293b]/80 hover:border-slate-300 dark:hover:border-slate-700'">
         <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex gap-1">
+            <button @click.stop="handleTogglePin"
+                class="p-1 transition-colors rounded hover:bg-slate-200 dark:hover:bg-slate-700/50"
+                :class="project.pinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'"
+                :title="project.pinned ? t('dashboard.unpin') : t('dashboard.pin')">
+                <div :class="project.pinned ? 'i-mdi-pin' : 'i-mdi-pin-outline'" class="text-sm" />
+            </button>
             <button @click.stop="openEditor"
                 class="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded hover:bg-slate-200 dark:hover:bg-slate-700/50"
                 :title="t('dashboard.openInEditor')">
@@ -108,8 +136,11 @@ async function openFolder() {
         </div>
 
         <div class="flex justify-between items-center mb-1">
-            <h3 class="font-bold text-sm truncate pr-20" :class="isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'">{{
-                project.name }}</h3>
+            <div class="flex items-center gap-1.5">
+                <div v-if="project.pinned" class="i-mdi-pin text-amber-500 text-xs flex-shrink-0" />
+                <h3 class="font-bold text-sm truncate pr-20" :class="isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'">{{
+                    project.name }}</h3>
+            </div>
             <div class="flex-shrink-0">
                 <div v-if="isRunning"
                     class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse">
@@ -119,8 +150,9 @@ async function openFolder() {
 
         <div class="text-xs text-slate-500 dark:text-slate-500 truncate font-mono mb-3 opacity-80 pr-6">{{ project.path }}</div>
 
+        <!-- Node scripts -->
         <div class="flex flex-wrap gap-2 relative z-10"
-            v-if="(isActive || isRunning) && project.scripts && project.scripts.length">
+            v-if="project.type === 'node' && (isActive || isRunning) && project.scripts && project.scripts.length">
             <button v-for="script in project.scripts" :key="script" @click.stop="handleRun(script)"
                 :disabled="store.runningStatus[`${project.id}:${script}`]"
                 class="px-2 py-1 text-[10px] rounded border transition-all uppercase tracking-wider font-medium"
@@ -128,6 +160,16 @@ async function openFolder() {
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed'
                     : 'bg-slate-200/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed'">
                 {{ script }}
+            </button>
+        </div>
+
+        <!-- Custom commands for non-Node projects -->
+        <div class="flex flex-wrap gap-2 relative z-10"
+            v-if="project.type !== 'node' && (isActive || isRunning) && project.customCommands && project.customCommands.length">
+            <button v-for="cmd in project.customCommands" :key="cmd.id" @click.stop="handleRunCustom(cmd.id)"
+                :disabled="store.runningStatus[`${project.id}:${cmd.id}`]"
+                class="px-2 py-1 text-[10px] rounded border transition-all tracking-wider font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 hover:bg-violet-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                {{ cmd.name }}
             </button>
         </div>
     </div>

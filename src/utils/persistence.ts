@@ -33,11 +33,19 @@ export async function loadData() {
 
     if (data.projects) {
       const projectStore = useProjectStore();
-      projectStore.projects = data.projects;
+      // Migrate old project data: ensure new optional fields have defaults
+      projectStore.projects = data.projects.map((p: any) => ({
+        ...p,
+        type: p.type || 'node',
+        scripts: p.scripts || [],
+        customCommands: p.customCommands || [],
+        pinned: p.pinned ?? false,
+        pinOrder: p.pinOrder ?? undefined,
+      }));
     }
     if (data.settings) {
       const settingsStore = useSettingsStore();
-      settingsStore.settings = data.settings;
+      settingsStore.settings = { ...settingsStore.settings, ...data.settings };
     }
     if (data.customNodes) {
       const nodeStore = useNodeStore();

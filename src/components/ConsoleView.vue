@@ -107,12 +107,25 @@ watch(activeProject, (newP) => {
     activeScript.value = null;
 
     if (newP) {
-        newP.scripts.forEach(s => {
-            const key = `${newP.id}:${s}`;
-            if (projectStore.runningStatus[key] || (projectStore.logs[key] && projectStore.logs[key].length > 0)) {
-                openTabs.value.add(s);
-            }
-        });
+        // Check node scripts
+        if (newP.scripts) {
+            newP.scripts.forEach(s => {
+                const key = `${newP.id}:${s}`;
+                if (projectStore.runningStatus[key] || (projectStore.logs[key] && projectStore.logs[key].length > 0)) {
+                    openTabs.value.add(s);
+                }
+            });
+        }
+
+        // Check custom commands
+        if (newP.customCommands) {
+            newP.customCommands.forEach(c => {
+                const key = `${newP.id}:${c.id}`;
+                if (projectStore.runningStatus[key] || (projectStore.logs[key] && projectStore.logs[key].length > 0)) {
+                    openTabs.value.add(c.id);
+                }
+            });
+        }
 
         // Auto select first available
         if (openTabs.value.size > 0) {
@@ -126,6 +139,13 @@ watch(activeProject, (newP) => {
 const availableTabs = computed(() => {
     return Array.from(openTabs.value);
 });
+
+function getTabLabel(tabId: string): string {
+    if (!activeProject.value) return tabId;
+    const customCmd = activeProject.value.customCommands?.find(c => c.id === tabId);
+    if (customCmd) return customCmd.name;
+    return tabId;
+}
 
 const logs = computed(() => {
     if (!activeProject.value || !activeScript.value) return [];
@@ -197,7 +217,12 @@ async function handleRestart() {
         
         // 启动
         if (activeProject.value && activeScript.value) {
-            projectStore.runProject(activeProject.value, activeScript.value);
+            const customCmd = activeProject.value.customCommands?.find(c => c.id === activeScript.value);
+            if (customCmd) {
+                projectStore.runCustomCommand(activeProject.value, customCmd.id);
+            } else {
+                projectStore.runProject(activeProject.value, activeScript.value);
+            }
         }
     }
 }
@@ -210,7 +235,13 @@ function handleClear() {
 
 function handleRun(script: string) {
     if (activeProject.value) {
-        projectStore.runProject(activeProject.value, script);
+        // Check if it's a custom command id
+        const customCmd = activeProject.value.customCommands?.find(c => c.id === script);
+        if (customCmd) {
+            projectStore.runCustomCommand(activeProject.value, customCmd.id);
+        } else {
+            projectStore.runProject(activeProject.value, script);
+        }
     }
 }
 
@@ -249,7 +280,7 @@ function handleCloseTab(script: string) {
                         <span v-if="projectStore.runningStatus[`${activeProject.id}:${script}`]"
                             class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_rgba(16,185,129,0.5)]"></span>
                         <span v-else class="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-600"></span>
-                        {{ script }}
+                        {{ getTabLabel(script) }}
                     </div>
 
                     <button @click.stop="handleCloseTab(script)"
@@ -264,7 +295,7 @@ function handleCloseTab(script: string) {
         <div v-if="activeScript"
             class="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-[#0f172a] border-b border-slate-200 dark:border-slate-800">
             <div class="text-xs text-slate-500 font-mono flex items-center gap-2">
-                <span>Console: {{ activeScript }}</span>
+                <span>Console: {{ getTabLabel(activeScript) }}</span>
                 <span v-if="isRunning" class="text-emerald-500 flex items-center gap-1">
                     <div class="i-mdi-loading animate-spin" /> {{ t('dashboard.running') }}
                 </span>

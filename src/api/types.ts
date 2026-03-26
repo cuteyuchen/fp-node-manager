@@ -6,6 +6,7 @@ export interface ProjectInfo {
     path: string;
     packageManager?: 'npm' | 'yarn' | 'pnpm' | 'cnpm';
     nvmVersion?: string;
+    projectType: string;
 }
 
 export interface TerminalInfo {
@@ -27,6 +28,7 @@ export interface PlatformAPI {
 
     // Runner
     runProjectCommand(id: string, path: string, script: string, packageManager: string, nodePath: string): Promise<void>;
+    runCustomCommand(id: string, path: string, command: string): Promise<void>;
     stopProjectCommand(id: string): Promise<void>;
 
     // System / Shell

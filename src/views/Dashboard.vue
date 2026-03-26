@@ -58,21 +58,30 @@ function buildPinyinSearchText(text: string): string {
 const filteredProjects = computed(() => {
     const query = searchQuery.value.trim().toLowerCase();
     const compactQuery = query.replace(/\s+/g, '');
-  if (!query) {
-    return projectStore.projects;
-  }
-    return projectStore.projects.filter(project => {
-        const name = project.name.toLowerCase();
-        const projectPath = project.path.toLowerCase();
 
-        if (name.includes(query) || projectPath.includes(query)) {
-            return true;
-        }
+    let list = projectStore.projects;
+    if (query) {
+        list = list.filter(project => {
+            const name = project.name.toLowerCase();
+            const projectPath = project.path.toLowerCase();
 
-        const namePinyin = buildPinyinSearchText(project.name);
-        const pathPinyin = buildPinyinSearchText(project.path);
+            if (name.includes(query) || projectPath.includes(query)) {
+                return true;
+            }
 
-        return namePinyin.includes(compactQuery) || pathPinyin.includes(compactQuery);
+            const namePinyin = buildPinyinSearchText(project.name);
+            const pathPinyin = buildPinyinSearchText(project.path);
+
+            return namePinyin.includes(compactQuery) || pathPinyin.includes(compactQuery);
+        });
+    }
+
+    // Sort: pinned first (by pinOrder), then unpinned in original order
+    return [...list].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        if (a.pinned && b.pinned) return (a.pinOrder ?? 0) - (b.pinOrder ?? 0);
+        return 0;
     });
 });
 
@@ -149,7 +158,7 @@ async function batchAddProjects() {
                                 await api.scanProject(subPath);
                                 pathsToScan.push(subPath);
                             } catch (subE) {
-                                // Not a project, ignore
+                                // Not a valid directory, ignore
                             }
                         }
                     }
@@ -172,47 +181,51 @@ async function batchAddProjects() {
                 const info = await api.scanProject(path);
                 let nodeVersion = 'Default';
 
-                const normalizedNvmVersion = normalizeNvmVersion(info.nvmVersion);
-                if (normalizedNvmVersion) {
-                    let installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
-
-                    if (!installed && !processedInstallVersions.has(normalizedNvmVersion)) {
-                        processedInstallVersions.add(normalizedNvmVersion);
-                        try {
-                            ElMessage.info(t('project.autoInstallStart', { version: normalizedNvmVersion }));
-                            await api.installNode(normalizedNvmVersion);
-                            ElMessage.success(t('project.autoInstallSuccess', { version: normalizedNvmVersion }));
-
-                            const latestList = await api.getNvmList();
-                            currentNodeVersions = latestList.map(v => v.version);
-                            installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
-                        } catch (installErr) {
-                            ElMessage.error(`${t('project.autoInstallFailed', { version: normalizedNvmVersion })}: ${String(installErr)}`);
-                            console.error('Failed to auto-install node version in batch add', installErr);
-                        }
-                    }
-
-                    if (!installed) {
-                        installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
-                    }
-
-                    if (installed) {
-                        nodeVersion = installed;
-                    }
-                } else if (info.nvmVersion) {
-                    hasInvalidNvmrc = true;
-                    console.warn('Invalid .nvmrc version in batch add, skipping auto install', info.nvmVersion);
-                }
-
                 const project: Project = {
                     id: crypto.randomUUID(),
                     name: info.name || path.split(/[/\\]/).pop() || 'Unknown',
                     path: path,
-                    type: 'node',
-                    nodeVersion,
-                    packageManager: info.packageManager || 'npm',
-                    scripts: info.scripts
+                    type: (info.projectType === 'node' ? 'node' : 'other') as Project['type'],
                 };
+
+                if (info.projectType === 'node') {
+                    const normalizedNvmVersion = normalizeNvmVersion(info.nvmVersion);
+                    if (normalizedNvmVersion) {
+                        let installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+
+                        if (!installed && !processedInstallVersions.has(normalizedNvmVersion)) {
+                            processedInstallVersions.add(normalizedNvmVersion);
+                            try {
+                                ElMessage.info(t('project.autoInstallStart', { version: normalizedNvmVersion }));
+                                await api.installNode(normalizedNvmVersion);
+                                ElMessage.success(t('project.autoInstallSuccess', { version: normalizedNvmVersion }));
+
+                                const latestList = await api.getNvmList();
+                                currentNodeVersions = latestList.map(v => v.version);
+                                installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+                            } catch (installErr) {
+                                ElMessage.error(`${t('project.autoInstallFailed', { version: normalizedNvmVersion })}: ${String(installErr)}`);
+                                console.error('Failed to auto-install node version in batch add', installErr);
+                            }
+                        }
+
+                        if (!installed) {
+                            installed = findInstalledNodeVersion(currentNodeVersions, normalizedNvmVersion);
+                        }
+
+                        if (installed) {
+                            nodeVersion = installed;
+                        }
+                    } else if (info.nvmVersion) {
+                        hasInvalidNvmrc = true;
+                        console.warn('Invalid .nvmrc version in batch add, skipping auto install', info.nvmVersion);
+                    }
+
+                    project.nodeVersion = nodeVersion;
+                    project.packageManager = info.packageManager || 'npm';
+                    project.scripts = info.scripts;
+                }
+
                 projectStore.addProject(project);
                 addedCount++;
             } catch (e) {

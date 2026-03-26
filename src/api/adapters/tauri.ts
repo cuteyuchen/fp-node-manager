@@ -46,6 +46,10 @@ export class TauriAdapter implements PlatformAPI {
     async runProjectCommand(id: string, path: string, script: string, packageManager: string, nodePath: string): Promise<void> {
         return invoke('run_project_command', { id, path, script, packageManager, nodePath });
     }
+
+    async runCustomCommand(id: string, path: string, command: string): Promise<void> {
+        return invoke('run_custom_command', { id, path, command });
+    }
     
     async stopProjectCommand(id: string): Promise<void> {
         return invoke('stop_project_command', { id });

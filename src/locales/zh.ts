@@ -46,7 +46,9 @@ export default {
     clickRunHint: '点击上方的运行按钮以启动脚本',
     waitingForOutput: '等待输出...',
     dropToImport: '拖动文件夹到此处以导入项目',
-    console: '命令运行'
+    console: '命令运行',
+    pin: '置顶',
+    unpin: '取消置顶'
   },
   nodes: {
     title: 'Node 版本管理',
@@ -110,6 +112,16 @@ export default {
     gitAiModelPlaceholder: 'gpt-4o-mini',
     gitAiPromptTemplate: '自定义提示词（可选）',
     gitAiPromptPlaceholder: '留空则使用默认提示词',
+    gitAiTestBtn: '测试连接',
+    gitAiTestSuccess: '连接成功',
+    gitAiTestAuthError: '认证失败：请检查 API Key',
+    gitAiTestModelNotFound: '模型未找到：请检查模型名称',
+    gitAiTestRateLimit: '请求频率超限，请稍后再试',
+    gitAiTestTimeout: '连接超时：无法连接到 API 服务器',
+    gitAiTestUnreachable: '无法连接：请检查 API 地址',
+    gitAiTestHttpError: 'HTTP 错误 {status}：{error}',
+    gitAiTestError: '测试失败：{error}',
+    gitAiTestMissingConfig: '请填写 API 地址、API Key 和模型',
   },
   project: {
     name: '项目名称',
@@ -126,7 +138,12 @@ export default {
     invalidNvmrc: '.nvmrc 内容无效，已跳过自动安装',
     autoInstallStart: '正在自动安装 Node {version}...',
     autoInstallSuccess: 'Node {version} 自动安装完成',
-    autoInstallFailed: 'Node {version} 自动安装失败'
+    autoInstallFailed: 'Node {version} 自动安装失败',
+    typeOther: '其他',
+    customCommands: '自定义命令',
+    commandName: '命令名称',
+    commandContent: '命令内容',
+    addCommand: '添加命令'
   },
   update: {
     title: '发现新版本',

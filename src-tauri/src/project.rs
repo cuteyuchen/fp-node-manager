@@ -12,6 +12,8 @@ pub struct ProjectInfo {
     package_manager: Option<String>,
     #[serde(rename = "nvmVersion")]
     nvm_version: Option<String>,
+    #[serde(rename = "projectType")]
+    project_type: String,
 }
 
 #[derive(Deserialize)]
@@ -51,17 +53,37 @@ pub fn scan_project(path: String) -> Result<ProjectInfo, String> {
     let project_path = Path::new(&path);
     let package_json_path = project_path.join("package.json");
 
-    if !package_json_path.exists() {
-        return Err("package.json not found".to_string());
+    if !project_path.exists() || !project_path.is_dir() {
+        return Err("Directory does not exist".to_string());
     }
 
-    let content = fs::read_to_string(package_json_path).map_err(|e| e.to_string())?;
+    // Determine default name from directory
+    let dir_name = project_path
+        .file_name()
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or("Unknown")
+        .to_string();
+
+    if !package_json_path.exists() {
+        // Non-Node project: return basic info
+        return Ok(ProjectInfo {
+            name: dir_name,
+            scripts: Vec::new(),
+            path,
+            package_manager: None,
+            nvm_version: None,
+            project_type: "other".to_string(),
+        });
+    }
+
+    let content = fs::read_to_string(&package_json_path).map_err(|e| e.to_string())?;
     let pkg: PackageJson = serde_json::from_str(&content).map_err(|e| e.to_string())?;
 
     let mut scripts: Vec<String> = pkg.scripts.unwrap_or_default().keys().cloned().collect();
     scripts.sort();
     
-    let name = pkg.name.unwrap_or_else(|| project_path.file_name().unwrap().to_str().unwrap().to_string());
+    let name = pkg.name.unwrap_or_else(|| dir_name.clone());
 
     let mut package_manager = None;
     if project_path.join("pnpm-lock.yaml").exists() {
@@ -89,5 +111,6 @@ pub fn scan_project(path: String) -> Result<ProjectInfo, String> {
         path,
         package_manager,
         nvm_version,
+        project_type: "node".to_string(),
     })
 }

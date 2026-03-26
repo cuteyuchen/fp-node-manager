@@ -67,6 +67,7 @@ pub fn run() {
             project::scan_project,
             project::read_dir,
             runner::run_project_command,
+            runner::run_custom_command,
             runner::stop_project_command,
             runner::open_in_editor,
             runner::open_in_terminal,

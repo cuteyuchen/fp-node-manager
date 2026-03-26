@@ -145,6 +145,64 @@ async function importData() {
 function openReleases() {
     api.openUrl('https://github.com/cuteyuchen/fp-node-manager/releases');
 }
+
+const aiTestLoading = ref(false);
+const aiTestResult = ref<{ success: boolean; message: string } | null>(null);
+
+async function testAiConnection() {
+    const s = settingsStore.settings;
+    if (!s.gitAiBaseUrl || !s.gitAiApiKey || !s.gitAiModel) {
+        aiTestResult.value = { success: false, message: t('settings.gitAiTestMissingConfig') };
+        return;
+    }
+    aiTestLoading.value = true;
+    aiTestResult.value = null;
+
+    const url = s.gitAiBaseUrl.replace(/\/$/, '') + '/chat/completions';
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+        const response = await globalThis.fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${s.gitAiApiKey}`,
+            },
+            body: JSON.stringify({
+                model: s.gitAiModel,
+                messages: [{ role: 'user', content: 'Hi' }],
+                max_tokens: 5,
+            }),
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            aiTestResult.value = { success: true, message: t('settings.gitAiTestSuccess') };
+        } else if (response.status === 401 || response.status === 403) {
+            aiTestResult.value = { success: false, message: t('settings.gitAiTestAuthError') };
+        } else if (response.status === 404) {
+            aiTestResult.value = { success: false, message: t('settings.gitAiTestModelNotFound') };
+        } else if (response.status === 429) {
+            aiTestResult.value = { success: false, message: t('settings.gitAiTestRateLimit') };
+        } else {
+            const text = await response.text().catch(() => '');
+            aiTestResult.value = { success: false, message: t('settings.gitAiTestHttpError', { status: response.status, error: text.slice(0, 200) }) };
+        }
+    } catch (e: any) {
+        clearTimeout(timeoutId);
+        if (e.name === 'AbortError') {
+            aiTestResult.value = { success: false, message: t('settings.gitAiTestTimeout') };
+        } else if (e.message?.includes('fetch') || e.message?.includes('network') || e.message?.includes('Failed')) {
+            aiTestResult.value = { success: false, message: t('settings.gitAiTestUnreachable') };
+        } else {
+            aiTestResult.value = { success: false, message: t('settings.gitAiTestError', { error: String(e).slice(0, 200) }) };
+        }
+    } finally {
+        aiTestLoading.value = false;
+    }
+}
 </script>
 
 <template>
@@ -316,6 +374,21 @@ function openReleases() {
                                 :rows="3"
                                 :placeholder="t('settings.gitAiPromptPlaceholder')"
                             />
+                        </el-form-item>
+                        <el-form-item class="lg:col-span-2">
+                            <div class="flex items-center gap-3">
+                                <el-button :loading="aiTestLoading" @click="testAiConnection" type="primary" plain>
+                                    <el-icon class="mr-1" v-if="!aiTestLoading"><div class="i-mdi-connection" /></el-icon>
+                                    {{ t('settings.gitAiTestBtn') }}
+                                </el-button>
+                                <div v-if="aiTestResult" class="text-sm flex items-center gap-1">
+                                    <div v-if="aiTestResult.success" class="i-mdi-check-circle text-green-500" />
+                                    <div v-else class="i-mdi-close-circle text-red-500" />
+                                    <span :class="aiTestResult.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                        {{ aiTestResult.message }}
+                                    </span>
+                                </div>
+                            </div>
                         </el-form-item>
                     </div>
                 </template>
