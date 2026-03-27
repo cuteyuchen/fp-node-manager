@@ -27,6 +27,9 @@ export const useGitStore = defineStore('git', () => {
   // Currently selected commit hash in history
   const selectedCommitHash = ref<Record<string, string>>({});
 
+  // Commit message per project (survives tab switches)
+  const commitMessage = ref<Record<string, string>>({});
+
   // Loading states
   const loading = ref(false);
   const operationLoading = ref(false);
@@ -287,7 +290,12 @@ export const useGitStore = defineStore('git', () => {
     }
 
     const systemPrompt = settings.promptTemplate?.trim() ||
-      'You are an expert developer. Write a concise, meaningful git commit message in English summarizing the changes. Output only the commit message, no extra text.';
+      `生成提交信息时，请遵循以下规范：
+1. 第一行使用 Conventional Commits 格式：<type>(<scope>): <简短描述>，type 为 feat/fix/refactor/chore/docs/style/test/perf 之一，scope 为本次改动涉及的模块或文件名。
+2. 第一行之后空一行，然后写正文（body），正文要简略说明：做了哪些具体改动。
+3. 使用中文撰写正文，第一行可用中文或英文。
+4. 正文每行不超过 72 个字符。
+5. 只输出提交信息本身，不要输出额外解释文字。`;
 
     const url = settings.baseUrl.replace(/\/$/, '') + '/chat/completions';
     const response = await globalThis.fetch(url, {
@@ -345,6 +353,7 @@ export const useGitStore = defineStore('git', () => {
     selectedDiffStaged,
     commitFiles,
     selectedCommitHash,
+    commitMessage,
     loading,
     operationLoading,
 

@@ -24,7 +24,7 @@ const form = ref<{
   id: string;
   name: string;
   path: string;
-  type: 'node' | 'static' | 'other';
+  type: 'node' | 'other';
   nodeVersion: string;
   packageManager: 'npm' | 'yarn' | 'pnpm' | 'cnpm';
   scripts: string[];
@@ -229,7 +229,6 @@ function submit() {
         <el-form-item :label="t('project.type')">
             <el-select v-model="form.type" class="w-full">
                 <el-option label="Node" value="node" />
-                <el-option label="Static" value="static" />
                 <el-option :label="t('project.typeOther')" value="other" />
             </el-select>
         </el-form-item>

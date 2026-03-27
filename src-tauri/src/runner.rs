@@ -750,12 +750,20 @@ pub fn open_in_terminal(path: String, terminal: String) -> Result<(), String> {
                     .map_err(|e| e.to_string())?;
             }
             _ => {
-                // CMD (Default)
-                // Use start /D to set directory, avoiding cd /d quote issues
-                Command::new("cmd")
-                    .args(&["/C", "start", "/D", &win_path, "cmd"])
-                    .spawn()
-                    .map_err(|e| e.to_string())?;
+                // Check if terminal is a custom executable path
+                if terminal.contains('\\') || terminal.contains('/') || terminal.ends_with(".exe") {
+                    Command::new(&terminal)
+                        .current_dir(&win_path)
+                        .creation_flags(CREATE_NO_WINDOW)
+                        .spawn()
+                        .map_err(|e| format!("Failed to launch custom terminal '{}': {}", terminal, e))?;
+                } else {
+                    // CMD (Default)
+                    Command::new("cmd")
+                        .args(&["/C", "start", "/D", &win_path, "cmd"])
+                        .spawn()
+                        .map_err(|e| e.to_string())?;
+                }
             }
         }
     }
@@ -770,10 +778,17 @@ pub fn open_in_terminal(path: String, terminal: String) -> Result<(), String> {
                     .map_err(|e| e.to_string())?;
             }
             _ => {
-                Command::new("open")
-                    .args(&["-a", "Terminal", &path])
-                    .spawn()
-                    .map_err(|e| e.to_string())?;
+                if terminal.contains('/') {
+                    Command::new(&terminal)
+                        .current_dir(&path)
+                        .spawn()
+                        .map_err(|e| format!("Failed to launch custom terminal '{}': {}", terminal, e))?;
+                } else {
+                    Command::new("open")
+                        .args(&["-a", "Terminal", &path])
+                        .spawn()
+                        .map_err(|e| e.to_string())?;
+                }
             }
         }
     }
@@ -813,10 +828,17 @@ pub fn open_in_terminal(path: String, terminal: String) -> Result<(), String> {
                     .map_err(|e| e.to_string())?;
             }
             _ => {
-                Command::new("x-terminal-emulator")
-                    .args(&["-e", "bash", "-lc", &shell_command])
-                    .spawn()
-                    .map_err(|e| e.to_string())?;
+                if terminal.contains('/') {
+                    Command::new(&terminal)
+                        .current_dir(&path)
+                        .spawn()
+                        .map_err(|e| format!("Failed to launch custom terminal '{}': {}", terminal, e))?;
+                } else {
+                    Command::new("x-terminal-emulator")
+                        .args(&["-e", "bash", "-lc", &shell_command])
+                        .spawn()
+                        .map_err(|e| e.to_string())?;
+                }
             }
         }
     }

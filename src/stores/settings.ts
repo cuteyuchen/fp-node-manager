@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import type { Settings } from '../types';
 import type { TerminalInfo } from '../api/types';
 import { api } from '../api';
@@ -9,6 +9,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const settings = ref<Settings>({
     editorPath: 'code',
     defaultTerminal: 'cmd',
+    customTerminals: [],
     locale: 'zh',
     themeMode: 'auto',
     autoUpdate: true,
@@ -92,9 +93,17 @@ export const useSettingsStore = defineStore('settings', () => {
     applySettings();
   }, { deep: true });
 
+  const allTerminals = computed(() => {
+    const custom = settings.value.customTerminals || [];
+    const detected = availableTerminals.value;
+    const ids = new Set(detected.map(t => t.id));
+    return [...detected, ...custom.filter(t => !ids.has(t.id))];
+  });
+
   return {
     settings,
     availableTerminals,
+    allTerminals,
     fetchAvailableTerminals
   };
 });

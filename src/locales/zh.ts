@@ -1,6 +1,6 @@
 export default {
   common: {
-    title: '前端项目 & Node 管理器',
+    title: '项目管理器',
     add: '添加',
     refresh: '刷新',
     cancel: '取消',
@@ -48,7 +48,9 @@ export default {
     dropToImport: '拖动文件夹到此处以导入项目',
     console: '命令运行',
     pin: '置顶',
-    unpin: '取消置顶'
+    unpin: '取消置顶',
+    selectProjectHint: '请选择一个项目',
+    selectProjectDesc: '选择左侧项目后可查看命令运行与 Git 管理'
   },
   nodes: {
     title: 'Node 版本管理',
@@ -75,8 +77,12 @@ export default {
     defaultTerminal: '默认终端',
     terminalHint: '脚本执行时的包装器。',
     terminalNotInstalled: '未安装',
+    terminalAlreadyExists: '该终端已存在',
+    addTerminal: '添加自定义终端',
+    detectedTerminals: '系统检测',
+    customTerminals: '自定义终端',
     contextMenu: '添加到右键菜单',
-    contextMenuHint: '在文件夹右键菜单中添加"在前端项目 & Node 管理器中打开"选项',
+    contextMenuHint: '在文件夹右键菜单中添加“在项目管理器中打开”选项',
     autoLaunch: '开机自启动',
     autoLaunchHint: '开机时自动启动应用程序',
     appearance: '外观设置',
@@ -111,7 +117,7 @@ export default {
     gitAiModel: '模型',
     gitAiModelPlaceholder: 'gpt-4o-mini',
     gitAiPromptTemplate: '自定义提示词（可选）',
-    gitAiPromptPlaceholder: '留空则使用默认提示词',
+    gitAiPromptPlaceholder: '留空则使用默认提示词：使用 Conventional Commits 格式，中文正文，每行不超过 72 字符',
     gitAiTestBtn: '测试连接',
     gitAiTestSuccess: '连接成功',
     gitAiTestAuthError: '认证失败：请检查 API Key',
@@ -122,6 +128,7 @@ export default {
     gitAiTestHttpError: 'HTTP 错误 {status}：{error}',
     gitAiTestError: '测试失败：{error}',
     gitAiTestMissingConfig: '请填写 API 地址、API Key 和模型',
+    unsavedChanges: '有未保存的更改',
   },
   project: {
     name: '项目名称',
@@ -196,6 +203,8 @@ export default {
     commitEmpty: '提交信息不能为空',
     commitNoStaged: '没有已暂存的文件',
     commitSuccess: '提交成功',
+    commitAndPush: '提交并推送',
+    commitAndPushSuccess: '提交并推送成功',
     pushSuccess: '推送成功',
     pullSuccess: '拉取成功',
     fetchSuccess: '获取成功',

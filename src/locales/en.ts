@@ -1,6 +1,6 @@
 export default {
   common: {
-    title: 'Frontend Project & Node Manager',
+    title: 'Project Manager',
     add: 'Add',
     refresh: 'Refresh',
     cancel: 'Cancel',
@@ -49,7 +49,9 @@ export default {
     dropToImport: 'Drop folder here to import project',
     console: 'Console',
     pin: 'Pin to Top',
-    unpin: 'Unpin'
+    unpin: 'Unpin',
+    selectProjectHint: 'Select a project',
+    selectProjectDesc: 'Choose a project from the left to view console and Git management'
   },
   nodes: {
     title: 'Node Version Manager',
@@ -76,8 +78,12 @@ export default {
     defaultTerminal: 'Default Terminal',
     terminalHint: 'Wrapper for script execution.',
     terminalNotInstalled: 'Not Installed',
+    terminalAlreadyExists: 'This terminal already exists',
+    addTerminal: 'Add custom terminal',
+    detectedTerminals: 'Detected',
+    customTerminals: 'Custom',
     contextMenu: 'Add to Context Menu',
-    contextMenuHint: 'Add "Open in Frontend Project & Node Manager" to directory context menu',
+    contextMenuHint: 'Add "Open in Project Manager" to directory context menu',
     autoLaunch: 'Auto-start on Boot',
     autoLaunchHint: 'Automatically launch the application when the system starts',
     appearance: 'Appearance Settings',
@@ -112,7 +118,7 @@ export default {
     gitAiModel: 'Model',
     gitAiModelPlaceholder: 'gpt-4o-mini',
     gitAiPromptTemplate: 'Custom Prompt (optional)',
-    gitAiPromptPlaceholder: 'Leave empty to use default prompt',
+    gitAiPromptPlaceholder: 'Leave empty for default: Conventional Commits format, Chinese body, max 72 chars per line',
     gitAiTestBtn: 'Test Connection',
     gitAiTestSuccess: 'Connection successful',
     gitAiTestAuthError: 'Authentication failed: check your API Key',
@@ -123,6 +129,7 @@ export default {
     gitAiTestHttpError: 'HTTP Error {status}: {error}',
     gitAiTestError: 'Test failed: {error}',
     gitAiTestMissingConfig: 'Please fill in API URL, API Key and Model',
+    unsavedChanges: 'Unsaved changes',
   },
   project: {
     name: 'Project Name',
@@ -196,6 +203,8 @@ export default {
     commitEmpty: 'Commit message cannot be empty',
     commitNoStaged: 'No staged files to commit',
     commitSuccess: 'Committed successfully',
+    commitAndPush: 'Commit & Push',
+    commitAndPushSuccess: 'Committed and pushed successfully',
     pushSuccess: 'Pushed successfully',
     pullSuccess: 'Pulled successfully',
     fetchSuccess: 'Fetched successfully',

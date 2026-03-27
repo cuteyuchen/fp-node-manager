@@ -83,14 +83,15 @@ watch(() => props.project.id, () => {
             <span class="font-medium text-slate-700 dark:text-slate-300 truncate flex-1">{{ commit.message }}</span>
             <span class="text-slate-400 dark:text-slate-500 shrink-0">{{ formatDate(commit.date) }}</span>
           </div>
-          <div class="flex items-center gap-1.5 mt-0.5">
-            <span class="text-slate-400 dark:text-slate-500">{{ commit.short_hash }}</span>
-            <span class="text-slate-400 dark:text-slate-500">{{ commit.author }}</span>
+          <div class="flex items-center gap-1.5 mt-0.5 min-w-0 overflow-hidden">
+            <span class="text-slate-400 dark:text-slate-500 shrink-0">{{ commit.short_hash }}</span>
+            <span class="text-slate-400 dark:text-slate-500 shrink-0">{{ commit.author }}</span>
             <span
-              v-for="ref in shortRefs(commit.refs)"
+              v-for="ref in shortRefs(commit.refs).slice(0, 3)"
               :key="ref"
-              class="text-[9px] px-1.5 py-0 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium"
+              class="text-[9px] px-1.5 py-0 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium shrink-0 truncate max-w-24"
             >{{ ref }}</span>
+            <span v-if="shortRefs(commit.refs).length > 3" class="text-[9px] text-slate-400 dark:text-slate-500 shrink-0">+{{ shortRefs(commit.refs).length - 3 }}</span>
           </div>
         </div>
       </div>

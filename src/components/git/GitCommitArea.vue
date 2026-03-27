@@ -14,7 +14,10 @@ const { t } = useI18n();
 const gitStore = useGitStore();
 const settingsStore = useSettingsStore();
 
-const commitMessage = ref('');
+const commitMessage = computed({
+  get: () => gitStore.commitMessage[props.project.id] || '',
+  set: (v: string) => { gitStore.commitMessage[props.project.id] = v; },
+});
 const aiGenerating = ref(false);
 
 const stagedFiles = computed(() => {
@@ -37,6 +40,25 @@ async function handleCommit() {
     await gitStore.commit(props.project.id, props.project.path, commitMessage.value.trim());
     commitMessage.value = '';
     ElMessage.success(t('git.commitSuccess'));
+  } catch (e: any) {
+    ElMessage.error(t('git.operationFailed', { error: String(e) }));
+  }
+}
+
+async function handleCommitAndPush() {
+  if (!commitMessage.value.trim()) {
+    ElMessage.warning(t('git.commitEmpty'));
+    return;
+  }
+  if (stagedFiles.value.length === 0) {
+    ElMessage.warning(t('git.commitNoStaged'));
+    return;
+  }
+  try {
+    await gitStore.commit(props.project.id, props.project.path, commitMessage.value.trim());
+    commitMessage.value = '';
+    await gitStore.push(props.project.id, props.project.path);
+    ElMessage.success(t('git.commitAndPushSuccess'));
   } catch (e: any) {
     ElMessage.error(t('git.operationFailed', { error: String(e) }));
   }
@@ -74,7 +96,7 @@ async function handleAiGenerate() {
 </script>
 
 <template>
-  <div class="flex flex-col shrink-0 overflow-hidden bg-white/40 dark:bg-[#0f172a]/40 border-t border-slate-200/40 dark:border-slate-700/20">
+  <div class="flex flex-col shrink-0 overflow-hidden bg-white/40 dark:bg-[#0f172a]/40 font-sans">
     <!-- Header -->
     <div class="flex items-center justify-between px-2.5 py-1 border-b border-slate-200/40 dark:border-slate-700/20 shrink-0">
       <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
@@ -96,21 +118,28 @@ async function handleAiGenerate() {
       </div>
     </div>
     <!-- Textarea -->
-    <div class="p-1.5 flex-1 min-h-0">
+    <div class="p-1.5 flex-1 min-h-0 overflow-hidden">
       <textarea
         v-model="commitMessage"
         :placeholder="t('git.commitPlaceholder')"
-        class="w-full h-full min-h-[60px] px-2 py-1.5 text-[11px] rounded-md border border-slate-200/60 dark:border-slate-700/30 bg-slate-50/50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500/30 placeholder:text-slate-400/40 transition-all duration-150"
+        class="w-full h-full px-2 py-1.5 text-[11px] rounded-md border border-slate-200/60 dark:border-slate-700/30 bg-slate-50/50 dark:bg-slate-900/20 text-slate-700 dark:text-slate-300 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500/30 placeholder:text-slate-400/40 transition-all duration-150"
         @keydown.ctrl.enter="handleCommit"
       />
     </div>
-    <!-- Commit button -->
-    <div class="px-1.5 pb-1.5 shrink-0">
+    <!-- Commit buttons -->
+    <div class="px-1.5 pb-1.5 shrink-0 flex gap-1.5">
       <button @click="handleCommit"
         :disabled="!commitMessage.trim() || stagedFiles.length === 0"
-        class="w-full py-1.5 rounded-md text-[11px] font-medium bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1 shadow-sm hover:shadow">
+        class="flex-1 py-1.5 rounded-md text-[11px] font-medium bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1 shadow-sm hover:shadow">
         <div class="i-mdi-check text-xs" />
         {{ t('git.commit') }}
+      </button>
+      <button @click="handleCommitAndPush"
+        :disabled="!commitMessage.trim() || stagedFiles.length === 0"
+        class="flex-1 py-1.5 rounded-md text-[11px] font-medium bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1 shadow-sm hover:shadow"
+        :title="t('git.commitAndPush')">
+        <div class="i-mdi-source-commit text-xs" />
+        {{ t('git.commitAndPush') }}
       </button>
     </div>
   </div>

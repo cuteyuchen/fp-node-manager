@@ -15,7 +15,7 @@ function handleSelect(key: string) {
 
 <template>
   <el-menu :default-active="activeIndex"
-    class="sidebar-menu h-full border-r-0 !bg-white/80 dark:!bg-[#0f172a]/80 backdrop-blur-md transition-colors duration-300"
+    class="sidebar-menu h-full border-r-0 !bg-white dark:!bg-[#0f172a] transition-colors duration-300"
     :collapse="true" @select="handleSelect">
     <div class="h-4"></div> <!-- Top spacing -->
 

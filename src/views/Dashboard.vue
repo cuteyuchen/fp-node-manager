@@ -256,7 +256,7 @@ async function batchAddProjects() {
 <template>
   <div class="h-full flex overflow-hidden">
     <!-- Project List Sidebar -->
-    <div class="w-72 flex flex-col border-r border-slate-200 dark:border-slate-700/30 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl z-20 shadow-2xl transition-colors duration-300">
+    <div class="w-72 flex flex-col border-r border-slate-200 dark:border-slate-700/30 bg-white dark:bg-[#0f172a] z-20 shadow-2xl transition-colors duration-300">
         <div class="p-4 border-b border-slate-200 dark:border-slate-700/30 flex justify-between items-center bg-white/50 dark:bg-[#0f172a]/50">
             <h2 class="text-base font-bold text-slate-800 dark:text-slate-100 tracking-wide uppercase text-xs opacity-80 pl-2">{{ t('dashboard.title') }}</h2>
             <div class="flex gap-2">
@@ -308,44 +308,54 @@ async function batchAddProjects() {
         </div>
     </div>
 
-    <!-- Main Right Panel with Tabs -->
+    <!-- Main Right Panel -->
     <div class="flex-1 overflow-hidden relative bg-slate-50 dark:bg-[#0b1120] shadow-inner transition-colors duration-300 flex flex-col">
-        <!-- Tab Bar -->
-        <div class="flex items-center border-b border-slate-200 dark:border-slate-700/30 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-sm px-2 shrink-0">
-            <button
-                @click="rightTab = 'console'"
-                class="px-4 py-2 text-sm font-medium transition-all relative cursor-pointer"
-                :class="rightTab === 'console'
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'"
-            >
-                <div class="flex items-center gap-1.5">
-                    <div class="i-mdi-console text-base" />
-                    <span>{{ t('dashboard.console') }}</span>
-                </div>
-                <div v-if="rightTab === 'console'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t" />
-            </button>
-            <button
-                @click="rightTab = 'git'"
-                class="px-4 py-2 text-sm font-medium transition-all relative cursor-pointer"
-                :class="rightTab === 'git'
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'"
-            >
-                <div class="flex items-center gap-1.5">
-                    <div class="i-mdi-git text-base" />
-                    <span>{{ t('git.title') }}</span>
-                    <span v-if="isGitRepo && gitChangesCount > 0" class="ml-1 px-1.5 py-0 text-xs rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 font-medium min-w-5 text-center">{{ gitChangesCount }}</span>
-                </div>
-                <div v-if="rightTab === 'git'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t" />
-            </button>
+        <!-- Empty state when no project selected -->
+        <div v-if="!activeProject" class="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-500">
+            <div class="i-mdi-monitor-dashboard text-5xl opacity-30" />
+            <p class="text-sm font-medium">{{ t('dashboard.selectProjectHint') }}</p>
+            <p class="text-xs opacity-60">{{ t('dashboard.selectProjectDesc') }}</p>
         </div>
 
-        <!-- Tab Content -->
-        <div class="flex-1 overflow-hidden relative">
-            <ConsoleView v-show="rightTab === 'console'" />
-            <GitView v-show="rightTab === 'git'" />
-        </div>
+        <!-- Workspace when project selected -->
+        <template v-else>
+            <!-- Tab Bar -->
+            <div class="flex items-center border-b border-slate-200 dark:border-slate-700/30 bg-white dark:bg-[#0f172a] px-2 shrink-0">
+                <button
+                    @click="rightTab = 'console'"
+                    class="px-4 py-2 text-sm font-medium transition-all relative cursor-pointer"
+                    :class="rightTab === 'console'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-700/40 rounded-t'"
+                >
+                    <div class="flex items-center gap-1.5">
+                        <div class="i-mdi-console text-base" />
+                        <span>{{ t('dashboard.console') }}</span>
+                    </div>
+                    <div v-if="rightTab === 'console'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t" />
+                </button>
+                <button
+                    @click="rightTab = 'git'"
+                    class="px-4 py-2 text-sm font-medium transition-all relative cursor-pointer"
+                    :class="rightTab === 'git'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-700/40 rounded-t'"
+                >
+                    <div class="flex items-center gap-1.5">
+                        <div class="i-mdi-git text-base" />
+                        <span>{{ t('git.title') }}</span>
+                        <span v-if="isGitRepo && gitChangesCount > 0" class="ml-1 px-1.5 py-0 text-xs rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 font-medium min-w-5 text-center">{{ gitChangesCount }}</span>
+                    </div>
+                    <div v-if="rightTab === 'git'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t" />
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="flex-1 overflow-hidden relative">
+                <ConsoleView v-show="rightTab === 'console'" />
+                <GitView v-show="rightTab === 'git'" />
+            </div>
+        </template>
     </div>
 
     <AddProjectModal 
