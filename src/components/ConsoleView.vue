@@ -262,7 +262,7 @@ function handleCloseTab(script: string) {
     <div class="absolute inset-0 flex flex-col bg-slate-50 dark:bg-[#0f172a] text-slate-700 dark:text-slate-300 overflow-hidden transition-colors duration-300">
         <!-- Header -->
         <div v-if="activeProject"
-            class="flex flex-col border-b border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-[#1e293b]/50 backdrop-blur-sm z-10">
+            class="flex flex-col border-b border-slate-200 dark:border-slate-700/50 bg-white dark:bg-[#1e293b] z-10">
             <div class="flex items-center justify-between p-4">
                 <div class="flex items-center gap-4">
                     <h2 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">{{ activeProject.name }}</h2>

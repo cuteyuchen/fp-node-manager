@@ -382,7 +382,7 @@ watch(() => nodeStore.versions, triggerSave, { deep: true });
           class="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none">
         </div>
 
-        <div class="relative h-full z-10 backdrop-blur-[0px]">
+        <div class="relative h-full z-10">
           <KeepAlive>
             <Dashboard v-if="currentView === 'dashboard'" key="dashboard" />
             <Settings v-else-if="currentView === 'settings'" key="settings" />

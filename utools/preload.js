@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn, exec, execSync } = require('child_process');
+const { spawn, exec, execSync, execFileSync } = require('child_process');
 
 // Helper to run command and get output
 function runCmd(cmd) {
@@ -562,7 +562,7 @@ window.services = {
     },
     
     getAppVersion: async () => {
-        return "0.1.14";
+        return "1.0.0";
     },
     
     installUpdate: async (url) => {
@@ -672,5 +672,385 @@ window.services = {
             }
         }
     },
-    
+
+    // ─── Git ─────────────────────────────────────────────────────────────────
+
+    gitCheck: async (projectPath) => {
+        try {
+            const result = execSync('git rev-parse --is-inside-work-tree', {
+                cwd: projectPath,
+                stdio: ['pipe', 'pipe', 'pipe'],
+                windowsHide: true,
+            });
+            return result.toString().trim() === 'true';
+        } catch (e) {
+            return false;
+        }
+    },
+
+    gitInit: async (projectPath) => {
+        return execSync('git init', { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitSummary: async (projectPath) => {
+        const runGit = (args) => execSync(`git ${args}`, { cwd: projectPath, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true }).toString().trim();
+        const runGitSafe = (args, fallback = '') => {
+            try { return runGit(args); } catch { return fallback; }
+        };
+
+        const branchRaw = runGitSafe('branch --show-current');
+        const isDetached = branchRaw === '';
+        const branch = isDetached
+            ? (runGitSafe('rev-parse --short HEAD') || 'HEAD')
+            : branchRaw;
+
+        let ahead = 0, behind = 0, hasRemote = false, remoteName = null;
+
+        if (!isDetached) {
+            const remote = runGitSafe(`config branch.${branchRaw}.remote`);
+            if (remote) {
+                hasRemote = true;
+                remoteName = remote;
+                const track = runGitSafe(`rev-list --left-right --count ${branchRaw}@{upstream}...HEAD`);
+                if (track) {
+                    const parts = track.split(/\s+/);
+                    if (parts.length === 2) {
+                        behind = parseInt(parts[0]) || 0;
+                        ahead = parseInt(parts[1]) || 0;
+                    }
+                }
+            }
+        }
+
+        return { branch, is_detached: isDetached, ahead, behind, has_remote: hasRemote, remote_name: remoteName };
+    },
+
+    gitStatus: async (projectPath) => {
+        let output;
+        try {
+            output = execSync('git status --porcelain=v1 -uall', {
+                cwd: projectPath, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, maxBuffer: 10 * 1024 * 1024
+            }).toString();
+        } catch (e) {
+            output = e.stdout ? e.stdout.toString() : '';
+        }
+
+        const staged = [], unstaged = [], untracked = [], conflicted = [];
+
+        for (const line of output.split('\n')) {
+            if (line.length < 3) continue;
+            const x = line[0], y = line[1];
+            const filePath = line.substring(3);
+
+            let actualPath = filePath, oldPath = null;
+            if (filePath.includes(' -> ')) {
+                const parts = filePath.split(' -> ');
+                oldPath = parts[0];
+                actualPath = parts[1];
+            }
+
+            // Conflicts
+            if ((x === 'U' || y === 'U') || (x === 'A' && y === 'A') || (x === 'D' && y === 'D')) {
+                conflicted.push({ path: actualPath, status: 'conflicted', staged: false, old_path: oldPath });
+                continue;
+            }
+
+            // Untracked
+            if (x === '?' && y === '?') {
+                untracked.push({ path: actualPath, status: 'untracked', staged: false, old_path: null });
+                continue;
+            }
+
+            // Staged
+            if (x !== ' ' && x !== '?') {
+                const statusMap = { M: 'modified', A: 'added', D: 'deleted', R: 'renamed', C: 'copied' };
+                staged.push({ path: actualPath, status: statusMap[x] || 'modified', staged: true, old_path: oldPath });
+            }
+
+            // Unstaged
+            if (y !== ' ' && y !== '?') {
+                const statusMap = { M: 'modified', D: 'deleted' };
+                unstaged.push({ path: actualPath, status: statusMap[y] || 'modified', staged: false, old_path: oldPath });
+            }
+        }
+
+        return { staged, unstaged, untracked, conflicted };
+    },
+
+    gitStage: async (projectPath, files) => {
+        return execFileSync('git', ['add', '--'].concat(files), { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitUnstage: async (projectPath, files) => {
+        return execFileSync('git', ['restore', '--staged', '--'].concat(files), { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitStageAll: async (projectPath) => {
+        return execSync('git add -A', { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitUnstageAll: async (projectPath) => {
+        return execSync('git restore --staged .', { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitCommit: async (projectPath, message) => {
+        // Use spawn to safely pass message without shell injection
+        return new Promise((resolve, reject) => {
+            const child = spawn('git', ['commit', '-m', message], { cwd: projectPath, windowsHide: true });
+            let stdout = '', stderr = '';
+            child.stdout.on('data', (d) => stdout += d);
+            child.stderr.on('data', (d) => stderr += d);
+            child.on('close', (code) => {
+                if (code === 0) resolve(stdout);
+                else reject(new Error(stderr || stdout));
+            });
+            child.on('error', reject);
+        });
+    },
+
+    gitPull: async (projectPath, remote, branch) => {
+        const args = ['pull'];
+        if (remote) args.push(remote);
+        if (branch) args.push(branch);
+        return new Promise((resolve, reject) => {
+            const child = spawn('git', args, { cwd: projectPath, windowsHide: true });
+            let stdout = '', stderr = '';
+            child.stdout.on('data', (d) => stdout += d);
+            child.stderr.on('data', (d) => stderr += d);
+            child.on('close', (code) => {
+                if (code === 0) resolve(stdout + stderr);
+                else reject(new Error(stderr || stdout));
+            });
+            child.on('error', reject);
+        });
+    },
+
+    gitPush: async (projectPath, remote, branch, force, setUpstream) => {
+        const args = ['push'];
+        if (force) args.push('--force');
+        if (setUpstream) args.push('-u');
+        if (remote) args.push(remote);
+        if (branch) args.push(branch);
+        return new Promise((resolve, reject) => {
+            const child = spawn('git', args, { cwd: projectPath, windowsHide: true });
+            let stdout = '', stderr = '';
+            child.stdout.on('data', (d) => stdout += d);
+            child.stderr.on('data', (d) => stderr += d);
+            child.on('close', (code) => {
+                if (code === 0) resolve(stdout + stderr);
+                else reject(new Error(stderr || stdout));
+            });
+            child.on('error', reject);
+        });
+    },
+
+    gitFetch: async (projectPath, remote) => {
+        const args = ['fetch'];
+        if (remote) args.push(remote);
+        else args.push('--all');
+        return new Promise((resolve, reject) => {
+            const child = spawn('git', args, { cwd: projectPath, windowsHide: true });
+            let stdout = '', stderr = '';
+            child.stdout.on('data', (d) => stdout += d);
+            child.stderr.on('data', (d) => stderr += d);
+            child.on('close', (code) => {
+                if (code === 0) resolve(stdout + stderr);
+                else reject(new Error(stderr || stdout));
+            });
+            child.on('error', reject);
+        });
+    },
+
+    gitDiff: async (projectPath, file, staged) => {
+        const args = ['diff'];
+        if (staged) args.push('--cached');
+        if (file) { args.push('--'); args.push(file); }
+        try {
+            return execFileSync('git', args, {
+                cwd: projectPath, windowsHide: true, maxBuffer: 10 * 1024 * 1024
+            }).toString();
+        } catch (e) {
+            return e.stdout ? e.stdout.toString() : '';
+        }
+    },
+
+    gitDiffCommit: async (projectPath, hash) => {
+        try {
+            return execFileSync('git', ['show', '--format=', '--patch', hash], {
+                cwd: projectPath, windowsHide: true, maxBuffer: 10 * 1024 * 1024
+            }).toString();
+        } catch (e) {
+            return e.stdout ? e.stdout.toString() : '';
+        }
+    },
+
+    gitDiscard: async (projectPath, files) => {
+        return execFileSync('git', ['restore', '--'].concat(files), { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitDiscardUntracked: async (projectPath, files) => {
+        return execFileSync('git', ['clean', '-f', '--'].concat(files), { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitCurrentBranch: async (projectPath) => {
+        return execSync('git branch --show-current', { cwd: projectPath, windowsHide: true }).toString().trim();
+    },
+
+    gitListBranches: async (projectPath) => {
+        const runGit = (args) => execSync(`git ${args}`, { cwd: projectPath, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true }).toString().trim();
+        const runGitSafe = (args) => { try { return runGit(args); } catch { return ''; } };
+
+        const current = runGitSafe('branch --show-current');
+        const branches = [];
+
+        // Local branches
+        const localOutput = runGitSafe('branch --format=%(refname:short)\t%(upstream:short)\t%(upstream:track)');
+        for (const line of localOutput.split('\n')) {
+            if (!line.trim()) continue;
+            const parts = line.split('\t');
+            const name = parts[0] || '';
+            const upstream = parts[1] || null;
+            const track = parts[2] || '';
+
+            let ahead = 0, behind = 0;
+            if (track) {
+                const inner = track.replace(/^\[/, '').replace(/\]$/, '');
+                for (const part of inner.split(',')) {
+                    const p = part.trim();
+                    if (p.startsWith('ahead ')) ahead = parseInt(p.substring(6)) || 0;
+                    else if (p.startsWith('behind ')) behind = parseInt(p.substring(7)) || 0;
+                }
+            }
+
+            branches.push({
+                name,
+                is_remote: false,
+                is_current: name === current,
+                upstream: upstream || null,
+                ahead,
+                behind,
+            });
+        }
+
+        // Remote branches
+        const remoteOutput = runGitSafe('branch -r --format=%(refname:short)');
+        for (const line of remoteOutput.split('\n')) {
+            const name = line.trim();
+            if (!name || name.includes('HEAD')) continue;
+            branches.push({ name, is_remote: true, is_current: false, upstream: null, ahead: 0, behind: 0 });
+        }
+
+        return branches;
+    },
+
+    gitSwitchBranch: async (projectPath, branch) => {
+        if (branch.includes('/')) {
+            const parts = branch.split('/');
+            const localName = parts.slice(1).join('/');
+            try {
+                return execFileSync('git', ['switch', localName], { cwd: projectPath, windowsHide: true }).toString();
+            } catch {
+                return execFileSync('git', ['switch', '-c', localName, '--track', branch], { cwd: projectPath, windowsHide: true }).toString();
+            }
+        }
+        return execFileSync('git', ['switch', branch], { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitCreateAndSwitchBranch: async (projectPath, name, startPoint) => {
+        const args = ['switch', '-c', name];
+        if (startPoint) args.push(startPoint);
+        return execFileSync('git', args, { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitDeleteBranch: async (projectPath, name, force) => {
+        const flag = force ? '-D' : '-d';
+        return execFileSync('git', ['branch', flag, name], { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitRenameBranch: async (projectPath, oldName, newName) => {
+        return execFileSync('git', ['branch', '-m', oldName, newName], { cwd: projectPath, windowsHide: true }).toString();
+    },
+
+    gitHistory: async (projectPath, maxCount) => {
+        const count = maxCount || 100;
+        let output;
+        try {
+            output = execFileSync('git', [
+                'log', `--max-count=${count}`,
+                '--format=%H%n%h%n%an%n%ae%n%aI%n%s%n%P%n%D%n---END---'
+            ], {
+                cwd: projectPath, windowsHide: true, maxBuffer: 10 * 1024 * 1024
+            }).toString();
+        } catch (e) {
+            output = e.stdout ? e.stdout.toString() : '';
+        }
+
+        const commits = [];
+        let lines = [];
+
+        for (const line of output.split('\n')) {
+            if (line === '---END---') {
+                if (lines.length >= 7) {
+                    commits.push({
+                        hash: lines[0],
+                        short_hash: lines[1],
+                        author: lines[2],
+                        email: lines[3],
+                        date: lines[4],
+                        message: lines[5],
+                        parents: lines[6] ? lines[6].split(' ') : [],
+                        refs: (lines[7] && lines[7].trim()) ? lines[7].split(', ').map(s => s.trim()) : [],
+                    });
+                }
+                lines = [];
+            } else {
+                lines.push(line);
+            }
+        }
+
+        return commits;
+    },
+
+    gitCommitFiles: async (projectPath, hash) => {
+        let output;
+        try {
+            output = execFileSync('git', ['show', '--name-status', '--format=', hash], {
+                cwd: projectPath, windowsHide: true, maxBuffer: 10 * 1024 * 1024
+            }).toString();
+        } catch (e) {
+            output = e.stdout ? e.stdout.toString() : '';
+        }
+
+        const files = [];
+        for (const line of output.split('\n')) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            const parts = trimmed.split('\t');
+            if (parts.length < 2) continue;
+
+            const statusRaw = parts[0];
+            const statusChar = statusRaw[0];
+
+            if (statusChar === 'R' || statusChar === 'C') {
+                if (parts.length >= 3) {
+                    files.push({ path: parts[2], status: statusChar, old_path: parts[1] });
+                }
+            } else {
+                files.push({ path: parts[1], status: statusChar, old_path: null });
+            }
+        }
+
+        return files;
+    },
+
+    gitDiffCommitFile: async (projectPath, hash, file) => {
+        try {
+            return execFileSync('git', ['show', '--format=', '--patch', hash, '--', file], {
+                cwd: projectPath, windowsHide: true, maxBuffer: 10 * 1024 * 1024
+            }).toString();
+        } catch (e) {
+            return e.stdout ? e.stdout.toString() : '';
+        }
+    },
+
 };

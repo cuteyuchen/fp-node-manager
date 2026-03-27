@@ -8,7 +8,7 @@ export interface Project {
   id: string;
   name: string;
   path: string;
-  type: 'node' | 'static' | 'other';
+  type: 'node' | 'other';
   nodeVersion?: string;
   packageManager?: 'npm' | 'yarn' | 'pnpm' | 'cnpm';
   scripts?: string[];
@@ -19,7 +19,8 @@ export interface Project {
 
 export interface Settings {
   editorPath: string; // e.g. "code" or absolute path
-  defaultTerminal: 'cmd' | 'powershell' | 'git-bash' | 'zsh' | 'bash';
+  defaultTerminal: string;
+  customTerminals?: { id: string; name: string }[];
   locale: 'zh' | 'en';
   themeMode: 'dark' | 'light' | 'auto';
   autoUpdate: boolean;

@@ -4,6 +4,7 @@ import { useProjectStore } from '../../stores/project';
 import { useGitStore } from '../../stores/git';
 import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
+import { useSplitPane } from '../../composables/useSplitPane';
 import GitToolbar from './GitToolbar.vue';
 import GitStatusPanel from './GitStatusPanel.vue';
 import GitCommitArea from './GitCommitArea.vue';
@@ -27,6 +28,45 @@ const isGitRepo = computed(() => {
   if (!activeProject.value) return false;
   return gitStore.isGitRepo[activeProject.value.id] || false;
 });
+
+// Draggable split panes for changes tab
+const leftPane = useSplitPane({ initial: 280, min: 180, max: 500, direction: 'horizontal' });
+const commitPane = useSplitPane({ initial: 180, min: 120, max: 400, direction: 'vertical', reverse: true });
+// For the staged/unstaged vertical split inside status panel, we use a percentage-based approach
+const stagedRatio = ref(50); // percentage of staged area height
+let stagedDragStart = 0;
+let stagedRatioStart = 0;
+const isDraggingStagedSplit = ref(false);
+const statusPanelRef = ref<HTMLElement | null>(null);
+
+function onStagedSplitMouseDown(e: MouseEvent) {
+  e.preventDefault();
+  isDraggingStagedSplit.value = true;
+  stagedDragStart = e.clientY;
+  stagedRatioStart = stagedRatio.value;
+  document.addEventListener('mousemove', onStagedSplitMouseMove);
+  document.addEventListener('mouseup', onStagedSplitMouseUp);
+  document.body.style.cursor = 'row-resize';
+  document.body.style.userSelect = 'none';
+}
+
+function onStagedSplitMouseMove(e: MouseEvent) {
+  if (!statusPanelRef.value) return;
+  const panelHeight = statusPanelRef.value.clientHeight;
+  if (panelHeight <= 0) return;
+  const delta = e.clientY - stagedDragStart;
+  const deltaPercent = (delta / panelHeight) * 100;
+  const newRatio = Math.min(85, Math.max(15, stagedRatioStart + deltaPercent));
+  stagedRatio.value = newRatio;
+}
+
+function onStagedSplitMouseUp() {
+  isDraggingStagedSplit.value = false;
+  document.removeEventListener('mousemove', onStagedSplitMouseMove);
+  document.removeEventListener('mouseup', onStagedSplitMouseUp);
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+}
 
 // Watch project changes — refresh and clear stale diff
 watch(activeProject, async (newProject, oldProject) => {
@@ -103,33 +143,70 @@ const tabs = computed(() => [
           class="px-3 py-1.5 text-[11px] font-medium transition-colors border-b-2 -mb-px cursor-pointer"
           :class="activeTab === tab.value
             ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-            : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+            : 'border-transparent text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-700/40'"
         >
           {{ tab.label }}
         </button>
       </div>
 
-      <!-- Content area -->
-      <div class="flex-1 flex min-h-0">
-        <!-- Left panel -->
-        <div class="w-[260px] flex flex-col border-r border-slate-200/40 dark:border-slate-700/30 shrink-0">
-          <template v-if="activeTab === 'changes'">
-            <div class="flex-1 min-h-0 overflow-hidden">
-              <GitStatusPanel :project="activeProject" />
+      <!-- ===== CHANGES TAB: SourceTree-style layout ===== -->
+      <div v-if="activeTab === 'changes'" class="flex-1 flex flex-col min-h-0">
+        <!-- Top area: status panel (left) + diff view (right) -->
+        <div class="flex-1 flex min-h-0">
+          <!-- Left: file status panel (staged top / unstaged bottom) -->
+          <div class="flex flex-col shrink-0 border-r border-slate-200/40 dark:border-slate-700/30" :style="{ width: leftPane.size.value + 'px' }">
+            <div ref="statusPanelRef" class="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <GitStatusPanel
+                :project="activeProject"
+                :staged-ratio="stagedRatio"
+                @staged-split-mousedown="onStagedSplitMouseDown"
+              />
             </div>
-            <GitCommitArea :project="activeProject" />
-          </template>
-          <template v-else>
-            <GitHistory :project="activeProject" />
-          </template>
+          </div>
+
+          <!-- Vertical drag handle: left ↔ right -->
+          <div
+            class="w-1 hover:w-1.5 shrink-0 cursor-col-resize transition-all group relative"
+            :class="leftPane.isDragging.value ? 'bg-blue-500/40 w-1.5' : 'hover:bg-blue-500/20'"
+            @mousedown="leftPane.onMouseDown"
+          >
+            <div class="absolute inset-y-0 -left-1 -right-1" />
+          </div>
+
+          <!-- Right: diff view -->
+          <div class="flex-1 min-w-0">
+            <GitDiffView :project="activeProject" />
+          </div>
         </div>
 
-        <!-- Middle panel: commit file list (history tab only) -->
-        <div v-if="activeTab === 'history'" class="w-[220px] flex flex-col border-r border-slate-200/40 dark:border-slate-700/30 shrink-0">
+        <!-- Horizontal drag handle: workspace ↔ commit -->
+        <div
+          class="h-1 hover:h-1.5 shrink-0 cursor-row-resize transition-all"
+          :class="commitPane.isDragging.value ? 'bg-blue-500/40 h-1.5' : 'hover:bg-blue-500/20'"
+          @mousedown="commitPane.onMouseDown"
+        >
+          <div class="absolute inset-x-0 -top-1 -bottom-1 relative" />
+        </div>
+
+        <!-- Bottom: commit area spanning full width -->
+        <div class="shrink-0 border-t border-slate-200/40 dark:border-slate-700/30" :style="{ height: commitPane.size.value + 'px' }">
+          <GitCommitArea :project="activeProject" class="h-full" />
+        </div>
+      </div>
+
+      <!-- ===== HISTORY TAB: three-column layout ===== -->
+      <div v-else class="flex-1 flex min-h-0">
+        <!-- Left panel: commit list -->
+        <div class="w-[260px] flex flex-col border-r border-slate-200/40 dark:border-slate-700/30 shrink-0">
+          <GitHistory :project="activeProject" />
+        </div>
+
+        <!-- Middle panel: commit file list -->
+        <div class="w-[220px] flex flex-col border-r border-slate-200/40 dark:border-slate-700/30 shrink-0">
           <GitCommitFileList :project="activeProject" />
         </div>
 
-        <!-- Right panel: shared diff view -->
+        <!-- Right panel: diff view -->
         <div class="flex-1 min-w-0">
           <GitDiffView :project="activeProject" />
         </div>

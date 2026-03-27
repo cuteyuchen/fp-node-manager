@@ -7,6 +7,11 @@ import type { Project, GitFileStatus } from '../../types';
 
 const props = defineProps<{
   project: Project;
+  stagedRatio: number;
+}>();
+
+const emit = defineEmits<{
+  'staged-split-mousedown': [e: MouseEvent];
 }>();
 
 const { t } = useI18n();
@@ -105,17 +110,20 @@ async function handleUnstageAll() {
     </div>
 
     <template v-else>
-      <!-- Staged files -->
-      <div v-if="stagedFiles.length > 0" class="shrink-0">
-        <div class="flex items-center gap-1 px-2 py-1 bg-green-500/5 border-b border-slate-200/30 dark:border-slate-700/20">
+      <!-- Staged area (top) -->
+      <div class="flex flex-col min-h-0 overflow-hidden" :style="{ height: stagedRatio + '%' }">
+        <div class="flex items-center gap-1 px-2 py-1 bg-green-500/5 border-b border-slate-200/30 dark:border-slate-700/20 shrink-0">
           <span class="font-medium text-green-600 dark:text-green-400 flex-1">
             {{ t('git.stagedChanges') }} ({{ stagedFiles.length }})
           </span>
-          <button @click="handleUnstageAll" class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer" :title="t('git.unstageAll')">
+          <button v-if="stagedFiles.length > 0" @click="handleUnstageAll" class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer" :title="t('git.unstageAll')">
             <div class="i-mdi-minus-circle-outline" />
           </button>
         </div>
-        <div class="max-h-[200px] overflow-auto">
+        <div class="flex-1 overflow-auto">
+          <div v-if="stagedFiles.length === 0" class="flex items-center justify-center h-full text-slate-400/60 dark:text-slate-500/40 text-[10px]">
+            {{ t('git.noChanges') }}
+          </div>
           <div v-for="file in stagedFiles" :key="'s:' + file.path"
             @click="viewDiff(file)"
             class="flex items-center gap-1 px-2 py-1 hover:bg-slate-100/60 dark:hover:bg-slate-800/30 cursor-pointer group">
@@ -130,39 +138,50 @@ async function handleUnstageAll() {
         </div>
       </div>
 
-      <!-- Conflicted files -->
-      <div v-if="conflictedFiles.length > 0" class="shrink-0">
-        <div class="flex items-center gap-1 px-2 py-1 bg-orange-500/5 border-b border-slate-200/30 dark:border-slate-700/20">
-          <span class="font-medium text-orange-600 dark:text-orange-400 flex-1">
-            {{ t('git.conflictedFiles') }} ({{ conflictedFiles.length }})
-          </span>
-        </div>
-        <div class="max-h-[150px] overflow-auto">
-          <div v-for="file in conflictedFiles" :key="'c:' + file.path"
-            @click="viewDiff(file)"
-            class="flex items-center gap-1 px-2 py-1 hover:bg-slate-100/60 dark:hover:bg-slate-800/30 cursor-pointer group">
-            <span class="w-4 text-center font-mono font-bold text-[10px] text-orange-500 shrink-0">C</span>
-            <span class="flex-1 truncate text-slate-700 dark:text-slate-300">
-              <span class="text-slate-400 dark:text-slate-500">{{ fileDir(file.path) }}</span>{{ fileName(file.path) }}
-            </span>
-            <button @click.stop="stageFile(file)" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-green-500 transition-opacity cursor-pointer" :title="t('git.stage')">
-              <div class="i-mdi-plus text-xs" />
-            </button>
-          </div>
-        </div>
+      <!-- Staged/Unstaged drag handle -->
+      <div
+        class="h-1 hover:h-1.5 shrink-0 cursor-row-resize transition-all hover:bg-blue-500/20"
+        @mousedown="emit('staged-split-mousedown', $event)"
+      >
+        <div class="relative inset-x-0 -top-1 -bottom-1" />
       </div>
 
-      <!-- Unstaged / Untracked files -->
-      <div v-if="unstagedFiles.length > 0" class="flex-1 min-h-0 flex flex-col">
+      <!-- Unstaged area (bottom) -->
+      <div class="flex flex-col min-h-0 overflow-hidden" :style="{ height: (100 - stagedRatio) + '%' }">
+        <!-- Conflicted files at top of unstaged -->
+        <template v-if="conflictedFiles.length > 0">
+          <div class="flex items-center gap-1 px-2 py-1 bg-orange-500/5 border-b border-slate-200/30 dark:border-slate-700/20 shrink-0">
+            <span class="font-medium text-orange-600 dark:text-orange-400 flex-1">
+              {{ t('git.conflictedFiles') }} ({{ conflictedFiles.length }})
+            </span>
+          </div>
+          <div class="max-h-[100px] overflow-auto shrink-0">
+            <div v-for="file in conflictedFiles" :key="'c:' + file.path"
+              @click="viewDiff(file)"
+              class="flex items-center gap-1 px-2 py-1 hover:bg-slate-100/60 dark:hover:bg-slate-800/30 cursor-pointer group">
+              <span class="w-4 text-center font-mono font-bold text-[10px] text-orange-500 shrink-0">C</span>
+              <span class="flex-1 truncate text-slate-700 dark:text-slate-300">
+                <span class="text-slate-400 dark:text-slate-500">{{ fileDir(file.path) }}</span>{{ fileName(file.path) }}
+              </span>
+              <button @click.stop="stageFile(file)" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-green-500 transition-opacity cursor-pointer" :title="t('git.stage')">
+                <div class="i-mdi-plus text-xs" />
+              </button>
+            </div>
+          </div>
+        </template>
+
         <div class="flex items-center gap-1 px-2 py-1 bg-yellow-500/5 border-b border-slate-200/30 dark:border-slate-700/20 shrink-0">
           <span class="font-medium text-yellow-600 dark:text-yellow-400 flex-1">
             {{ t('git.unstagedChanges') }} ({{ unstagedFiles.length }})
           </span>
-          <button @click="handleStageAll" class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer" :title="t('git.stageAll')">
+          <button v-if="unstagedFiles.length > 0" @click="handleStageAll" class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer" :title="t('git.stageAll')">
             <div class="i-mdi-plus-circle-outline" />
           </button>
         </div>
         <div class="flex-1 overflow-auto">
+          <div v-if="unstagedFiles.length === 0" class="flex items-center justify-center h-full text-slate-400/60 dark:text-slate-500/40 text-[10px]">
+            {{ t('git.noChanges') }}
+          </div>
           <div v-for="file in unstagedFiles" :key="'u:' + file.path"
             @click="viewDiff(file)"
             class="flex items-center gap-1 px-2 py-1 hover:bg-slate-100/60 dark:hover:bg-slate-800/30 cursor-pointer group">

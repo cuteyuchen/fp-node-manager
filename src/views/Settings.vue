@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, toRaw } from 'vue';
 import { useSettingsStore } from '../stores/settings';
 import { useProjectStore } from '../stores/project';
 import { useNodeStore } from '../stores/node';
 import { api } from '../api';
 import { ElMessage } from 'element-plus';
 import { useI18n } from 'vue-i18n';
+import type { Settings } from '../types';
 
 const { t } = useI18n();
 const settingsStore = useSettingsStore();
@@ -17,21 +18,31 @@ const contextMenuEnabled = ref(false);
 const contextMenuSupported = ref(false);
 const autoLaunchEnabled = ref(false);
 
+// ─── Draft settings (not directly bound to store) ───
+function deepClone<T>(obj: T): T { return JSON.parse(JSON.stringify(obj)); }
+const draft = ref<Settings>(deepClone(toRaw(settingsStore.settings)));
+
+const isDirty = computed(() => JSON.stringify(draft.value) !== JSON.stringify(settingsStore.settings));
+
+function resetDraft() {
+    draft.value = deepClone(toRaw(settingsStore.settings));
+}
+
+function handleSave() {
+    Object.assign(settingsStore.settings, deepClone(toRaw(draft.value)));
+    ElMessage.success(t('common.success'));
+}
+
+function handleCancel() {
+    resetDraft();
+}
+
 onMounted(async () => {
     appVersion.value = await api.getAppVersion();
-    // Use cached terminals or empty first
-    if (settingsStore.availableTerminals.length > 0) {
-        // If already cached, no need to fetch immediately
-    } else {
-        // We can fetch on demand, or fetch here if we want to pre-populate but non-blocking?
-        // User requested: "Fetch when software runs AND when clicking dropdown".
-        // If we fetch here, it's "when opening settings", not "software runs".
-        // But let's respect "don't run every time settings opens".
-        // We will move the initial fetch to App.vue or store init, but for now, check if empty.
-        // Actually, let's just use the store's fetch which handles caching.
+    if (settingsStore.availableTerminals.length === 0) {
         settingsStore.fetchAvailableTerminals();
     }
-    
+
     if (target !== 'utools') {
         contextMenuSupported.value = await api.isContextMenuSupported();
         if (contextMenuSupported.value) {
@@ -44,11 +55,11 @@ onMounted(async () => {
 
 async function toggleContextMenu(val: boolean) {
     try {
-        await api.setContextMenu(val, settingsStore.settings.locale);
-        ElMessage.success(val ? t('common.success') : t('common.success'));
+        await api.setContextMenu(val, draft.value.locale);
+        ElMessage.success(t('common.success'));
     } catch (e) {
         ElMessage.error(t('common.error') + ': ' + e);
-        contextMenuEnabled.value = !val; // revert
+        contextMenuEnabled.value = !val;
     }
 }
 
@@ -63,7 +74,7 @@ async function toggleAutoLaunch(val: boolean) {
         ElMessage.success(t('common.success'));
     } catch (e) {
         ElMessage.error(t('common.error') + ': ' + e);
-        autoLaunchEnabled.value = !val; // revert
+        autoLaunchEnabled.value = !val;
     }
 }
 
@@ -77,10 +88,41 @@ async function selectEditor() {
             }]
         });
         if (selected && typeof selected === 'string') {
-            settingsStore.settings.editorPath = selected;
+            draft.value.editorPath = selected;
         }
     } catch (e) {
         console.error(e);
+    }
+}
+
+async function addCustomTerminal() {
+    try {
+        const selected = await api.openDialog({
+            multiple: false,
+            filters: [{
+                name: 'Executable',
+                extensions: ['exe', 'cmd', 'bat', 'sh', '']
+            }]
+        });
+        if (selected && typeof selected === 'string') {
+            const name = selected.split(/[/\\]/).pop() || selected;
+            if (!draft.value.customTerminals) draft.value.customTerminals = [];
+            if (draft.value.customTerminals.some(ct => ct.id === selected)) {
+                ElMessage.warning(t('settings.terminalAlreadyExists'));
+                return;
+            }
+            draft.value.customTerminals.push({ id: selected, name });
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function removeCustomTerminal(id: string) {
+    if (!draft.value.customTerminals) return;
+    draft.value.customTerminals = draft.value.customTerminals.filter(ct => ct.id !== id);
+    if (draft.value.defaultTerminal === id) {
+        draft.value.defaultTerminal = settingsStore.allTerminals[0]?.id || 'cmd';
     }
 }
 
@@ -134,6 +176,8 @@ async function importData() {
                     }
                 });
             }
+            // Sync draft with imported settings
+            resetDraft();
             ElMessage.success(t('settings.importSuccess'));
         }
     } catch (e) {
@@ -150,7 +194,7 @@ const aiTestLoading = ref(false);
 const aiTestResult = ref<{ success: boolean; message: string } | null>(null);
 
 async function testAiConnection() {
-    const s = settingsStore.settings;
+    const s = draft.value;
     if (!s.gitAiBaseUrl || !s.gitAiApiKey || !s.gitAiModel) {
         aiTestResult.value = { success: false, message: t('settings.gitAiTestMissingConfig') };
         return;
@@ -206,194 +250,223 @@ async function testAiConnection() {
 </script>
 
 <template>
-  <div class="p-6 h-full flex flex-col overflow-y-auto">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">{{ t('settings.title') }}</h1>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
-        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm h-full flex flex-col">
-            <template #header>
-                <div class="font-bold">{{ t('settings.general') }}</div>
-            </template>
-            <el-form label-position="top">
-                <el-form-item :label="t('settings.editorPath')">
-                    <div class="flex gap-2 w-full">
-                        <el-input v-model="settingsStore.settings.editorPath" :placeholder="t('settings.editorPathPlaceholder')">
-                            <template #prepend>
-                                <el-icon><div class="i-mdi-console" /></el-icon>
-                            </template>
-                            <template #append>
-                                <el-button @click="selectEditor">{{ t('settings.selectFile') }}</el-button>
-                            </template>
-                        </el-input>
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {{ t('settings.editorPathHint') }}
-                    </div>
-                </el-form-item>
+  <div class="h-full flex flex-col overflow-hidden">
+    <!-- Top action bar — sticky -->
+    <div class="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-700/30 bg-white dark:bg-[#0f172a] shrink-0 z-10">
+      <div class="flex items-center gap-3">
+        <h1 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('settings.title') }}</h1>
+        <transition name="fade">
+          <span v-if="isDirty" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-medium">
+            {{ t('settings.unsavedChanges') }}
+          </span>
+        </transition>
+      </div>
+      <div class="flex items-center gap-2">
+        <el-button :disabled="!isDirty" @click="handleCancel">
+          {{ t('common.cancel') }}
+        </el-button>
+        <el-button type="primary" :disabled="!isDirty" @click="handleSave">
+          <div class="i-mdi-content-save text-sm mr-1" />
+          {{ t('common.save') }}
+        </el-button>
+      </div>
+    </div>
 
-                <el-form-item :label="t('settings.defaultTerminal')">
-                    <el-select 
-                        v-model="settingsStore.settings.defaultTerminal" 
-                        class="w-full"
-                    >
-                        <el-option 
-                            v-for="term in settingsStore.availableTerminals" 
-                            :key="term.id" 
-                            :label="term.name" 
-                            :value="term.id"
-                        />
-                    </el-select>
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {{ t('settings.terminalHint') }}
-                    </div>
-                </el-form-item>
-
-                <el-form-item :label="t('settings.contextMenu')" v-if="target !== 'utools' && contextMenuSupported">
-                    <el-switch v-model="contextMenuEnabled" @change="toggleContextMenu" />
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {{ t('settings.contextMenuHint') }}
-                    </div>
-                </el-form-item>
-
-                <el-form-item :label="t('settings.autoLaunch')" v-if="target !== 'utools'">
-                    <el-switch v-model="autoLaunchEnabled" @change="toggleAutoLaunch" />
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {{ t('settings.autoLaunchHint') }}
-                    </div>
-                </el-form-item>
-            </el-form>
-        </el-card>
-
-        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm h-full flex flex-col">
-            <template #header>
-                <div class="font-bold">{{ t('settings.appearance') }}</div>
-            </template>
-            <el-form label-position="top">
-                <el-form-item :label="t('settings.language')">
-                    <el-select v-model="settingsStore.settings.locale" class="w-full">
-                        <el-option label="中文" value="zh" />
-                        <el-option label="English" value="en" />
-                    </el-select>
-                </el-form-item>
-
-                <el-form-item :label="t('settings.theme')">
-                    <el-select v-model="settingsStore.settings.themeMode" class="w-full">
-                        <el-option :label="t('settings.themeMode.dark')" value="dark" />
-                        <el-option :label="t('settings.themeMode.light')" value="light" />
-                        <el-option :label="t('settings.themeMode.system')" value="auto" />
-                    </el-select>
-                </el-form-item>
-            </el-form>
-        </el-card>
-
-        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm h-full flex flex-col">
-            <template #header>
-                <div class="font-bold">{{ t('settings.update') }}</div>
-            </template>
-            <el-form label-position="top">
-                <el-form-item :label="t('settings.version')">
-                    <el-tag type="info" effect="plain" round>v{{ appVersion }}</el-tag>
-                </el-form-item>
-
-                <el-form-item :label="t('settings.autoUpdate')" v-if="target !== 'utools'">
-                    <el-switch v-model="settingsStore.settings.autoUpdate" />
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {{ t('settings.autoUpdateHint') }}
-                    </div>
-                </el-form-item>
-                
-                <div class="mt-4">
-                    <div class="text-sm font-medium mb-2">{{ t('settings.releases') }}</div>
-                    <el-button link type="primary" @click="openReleases">
-                        https://github.com/cuteyuchen/fp-node-manager/releases
-                        <el-icon class="ml-1"><div class="i-mdi-open-in-new" /></el-icon>
-                    </el-button>
-                </div>
-            </el-form>
-        </el-card>
-
-        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm h-full flex flex-col">
-            <template #header>
-                <div class="font-bold">{{ t('settings.data') }}</div>
-            </template>
-            <div class="flex gap-4">
-                <el-button type="primary" @click="exportData">
-                    <el-icon class="mr-1"><div class="i-mdi-export" /></el-icon>
-                    {{ t('settings.export') }}
-                </el-button>
-                <el-button @click="importData">
-                    <el-icon class="mr-1"><div class="i-mdi-import" /></el-icon>
-                    {{ t('settings.import') }}
-                </el-button>
+    <!-- Scrollable content -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <div class="max-w-4xl mx-auto space-y-5">
+        <!-- General Settings -->
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm">
+          <template #header>
+            <div class="font-bold flex items-center gap-2">
+              <div class="i-mdi-cog text-blue-500" />
+              {{ t('settings.general') }}
             </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                {{ t('settings.dataHint') }}
-            </div>
-        </el-card>
-
-        <!-- AI Commit Message Configuration (spans full width) -->
-        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm lg:col-span-2">
-            <template #header>
-                <div class="font-bold flex items-center gap-2">
-                    <div class="i-mdi-auto-fix text-violet-500" />
-                    {{ t('settings.gitAi') }}
-                </div>
-            </template>
-            <el-form label-position="top">
-                <el-form-item :label="t('settings.gitAiEnabled')">
-                    <el-switch v-model="settingsStore.settings.gitAiEnabled" />
-                </el-form-item>
-                <template v-if="settingsStore.settings.gitAiEnabled">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-6">
-                        <el-form-item :label="t('settings.gitAiBaseUrl')">
-                            <el-input
-                                v-model="settingsStore.settings.gitAiBaseUrl"
-                                :placeholder="t('settings.gitAiBaseUrlPlaceholder')"
-                                clearable
-                            />
-                        </el-form-item>
-                        <el-form-item :label="t('settings.gitAiModel')">
-                            <el-input
-                                v-model="settingsStore.settings.gitAiModel"
-                                :placeholder="t('settings.gitAiModelPlaceholder')"
-                                clearable
-                            />
-                        </el-form-item>
-                        <el-form-item :label="t('settings.gitAiApiKey')" class="lg:col-span-2">
-                            <el-input
-                                v-model="settingsStore.settings.gitAiApiKey"
-                                type="password"
-                                show-password
-                                :placeholder="t('settings.gitAiApiKeyPlaceholder')"
-                            />
-                        </el-form-item>
-                        <el-form-item :label="t('settings.gitAiPromptTemplate')" class="lg:col-span-2">
-                            <el-input
-                                v-model="settingsStore.settings.gitAiPromptTemplate"
-                                type="textarea"
-                                :rows="3"
-                                :placeholder="t('settings.gitAiPromptPlaceholder')"
-                            />
-                        </el-form-item>
-                        <el-form-item class="lg:col-span-2">
-                            <div class="flex items-center gap-3">
-                                <el-button :loading="aiTestLoading" @click="testAiConnection" type="primary" plain>
-                                    <el-icon class="mr-1" v-if="!aiTestLoading"><div class="i-mdi-connection" /></el-icon>
-                                    {{ t('settings.gitAiTestBtn') }}
-                                </el-button>
-                                <div v-if="aiTestResult" class="text-sm flex items-center gap-1">
-                                    <div v-if="aiTestResult.success" class="i-mdi-check-circle text-green-500" />
-                                    <div v-else class="i-mdi-close-circle text-red-500" />
-                                    <span :class="aiTestResult.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
-                                        {{ aiTestResult.message }}
-                                    </span>
-                                </div>
-                            </div>
-                        </el-form-item>
-                    </div>
+          </template>
+          <el-form label-position="top" class="max-w-lg">
+            <el-form-item :label="t('settings.editorPath')">
+              <el-input v-model="draft.editorPath" :placeholder="t('settings.editorPathPlaceholder')">
+                <template #prepend>
+                  <el-icon><div class="i-mdi-console" /></el-icon>
                 </template>
-            </el-form>
+                <template #append>
+                  <el-button @click="selectEditor">{{ t('settings.selectFile') }}</el-button>
+                </template>
+              </el-input>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('settings.editorPathHint') }}</div>
+            </el-form-item>
+
+            <el-form-item :label="t('settings.defaultTerminal')">
+              <div class="flex gap-2 w-full">
+                <el-select v-model="draft.defaultTerminal" class="flex-1">
+                  <el-option-group :label="t('settings.detectedTerminals')">
+                    <el-option v-for="term in settingsStore.availableTerminals" :key="term.id" :label="term.name" :value="term.id" />
+                  </el-option-group>
+                  <el-option-group v-if="draft.customTerminals?.length" :label="t('settings.customTerminals')">
+                    <el-option v-for="ct in draft.customTerminals" :key="ct.id" :label="ct.name" :value="ct.id" />
+                  </el-option-group>
+                </el-select>
+                <el-button @click="addCustomTerminal" :title="t('settings.addTerminal')">
+                  <div class="i-mdi-plus text-sm" />
+                </el-button>
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('settings.terminalHint') }}</div>
+              <!-- Custom terminals list -->
+              <div v-if="draft.customTerminals?.length" class="mt-2 space-y-1">
+                <div v-for="ct in draft.customTerminals" :key="ct.id" class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded px-2 py-1">
+                  <div class="i-mdi-console text-sm text-slate-400" />
+                  <span class="flex-1 truncate font-mono" :title="ct.id">{{ ct.name }}</span>
+                  <button @click="removeCustomTerminal(ct.id)" class="text-red-400 hover:text-red-500 cursor-pointer">
+                    <div class="i-mdi-close text-sm" />
+                  </button>
+                </div>
+              </div>
+            </el-form-item>
+
+            <el-form-item :label="t('settings.contextMenu')" v-if="target !== 'utools' && contextMenuSupported">
+              <el-switch v-model="contextMenuEnabled" @change="toggleContextMenu" />
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('settings.contextMenuHint') }}</div>
+            </el-form-item>
+
+            <el-form-item :label="t('settings.autoLaunch')" v-if="target !== 'utools'">
+              <el-switch v-model="autoLaunchEnabled" @change="toggleAutoLaunch" />
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('settings.autoLaunchHint') }}</div>
+            </el-form-item>
+          </el-form>
         </el-card>
+
+        <!-- Appearance -->
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm">
+          <template #header>
+            <div class="font-bold flex items-center gap-2">
+              <div class="i-mdi-palette text-purple-500" />
+              {{ t('settings.appearance') }}
+            </div>
+          </template>
+          <el-form label-position="top" class="max-w-lg">
+            <el-form-item :label="t('settings.language')">
+              <el-select v-model="draft.locale" class="w-full">
+                <el-option label="中文" value="zh" />
+                <el-option label="English" value="en" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item :label="t('settings.theme')">
+              <el-select v-model="draft.themeMode" class="w-full">
+                <el-option :label="t('settings.themeMode.dark')" value="dark" />
+                <el-option :label="t('settings.themeMode.light')" value="light" />
+                <el-option :label="t('settings.themeMode.system')" value="auto" />
+              </el-select>
+            </el-form-item>
+          </el-form>
+        </el-card>
+
+        <!-- Update -->
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm">
+          <template #header>
+            <div class="font-bold flex items-center gap-2">
+              <div class="i-mdi-update text-green-500" />
+              {{ t('settings.update') }}
+            </div>
+          </template>
+          <el-form label-position="top" class="max-w-lg">
+            <el-form-item :label="t('settings.version')">
+              <el-tag type="info" effect="plain" round>v{{ appVersion }}</el-tag>
+            </el-form-item>
+
+            <el-form-item :label="t('settings.autoUpdate')" v-if="target !== 'utools'">
+              <el-switch v-model="draft.autoUpdate" />
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('settings.autoUpdateHint') }}</div>
+            </el-form-item>
+
+            <div class="mt-2">
+              <div class="text-sm font-medium mb-2">{{ t('settings.releases') }}</div>
+              <el-button link type="primary" @click="openReleases">
+                https://github.com/cuteyuchen/fp-node-manager/releases
+                <el-icon class="ml-1"><div class="i-mdi-open-in-new" /></el-icon>
+              </el-button>
+            </div>
+          </el-form>
+        </el-card>
+
+        <!-- Data Management -->
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm">
+          <template #header>
+            <div class="font-bold flex items-center gap-2">
+              <div class="i-mdi-database text-amber-500" />
+              {{ t('settings.data') }}
+            </div>
+          </template>
+          <div class="flex gap-4">
+            <el-button type="primary" @click="exportData">
+              <el-icon class="mr-1"><div class="i-mdi-export" /></el-icon>
+              {{ t('settings.export') }}
+            </el-button>
+            <el-button @click="importData">
+              <el-icon class="mr-1"><div class="i-mdi-import" /></el-icon>
+              {{ t('settings.import') }}
+            </el-button>
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">{{ t('settings.dataHint') }}</div>
+        </el-card>
+
+        <!-- AI Commit Message Configuration -->
+        <el-card class="!bg-white dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700 shadow-sm">
+          <template #header>
+            <div class="font-bold flex items-center gap-2">
+              <div class="i-mdi-auto-fix text-violet-500" />
+              {{ t('settings.gitAi') }}
+            </div>
+          </template>
+          <el-form label-position="top">
+            <el-form-item :label="t('settings.gitAiEnabled')">
+              <el-switch v-model="draft.gitAiEnabled" />
+            </el-form-item>
+            <template v-if="draft.gitAiEnabled">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-6 max-w-2xl">
+                <el-form-item :label="t('settings.gitAiBaseUrl')">
+                  <el-input v-model="draft.gitAiBaseUrl" :placeholder="t('settings.gitAiBaseUrlPlaceholder')" clearable />
+                </el-form-item>
+                <el-form-item :label="t('settings.gitAiModel')">
+                  <el-input v-model="draft.gitAiModel" :placeholder="t('settings.gitAiModelPlaceholder')" clearable />
+                </el-form-item>
+                <el-form-item :label="t('settings.gitAiApiKey')" class="lg:col-span-2">
+                  <el-input v-model="draft.gitAiApiKey" type="password" show-password :placeholder="t('settings.gitAiApiKeyPlaceholder')" />
+                </el-form-item>
+                <el-form-item :label="t('settings.gitAiPromptTemplate')" class="lg:col-span-2">
+                  <el-input v-model="draft.gitAiPromptTemplate" type="textarea" :rows="3" :placeholder="t('settings.gitAiPromptPlaceholder')" />
+                </el-form-item>
+                <el-form-item class="lg:col-span-2">
+                  <div class="flex items-center gap-3">
+                    <el-button :loading="aiTestLoading" @click="testAiConnection" type="primary" plain>
+                      <el-icon class="mr-1" v-if="!aiTestLoading"><div class="i-mdi-connection" /></el-icon>
+                      {{ t('settings.gitAiTestBtn') }}
+                    </el-button>
+                    <div v-if="aiTestResult" class="text-sm flex items-center gap-1">
+                      <div v-if="aiTestResult.success" class="i-mdi-check-circle text-green-500" />
+                      <div v-else class="i-mdi-close-circle text-red-500" />
+                      <span :class="aiTestResult.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                        {{ aiTestResult.message }}
+                      </span>
+                    </div>
+                  </div>
+                </el-form-item>
+              </div>
+            </template>
+          </el-form>
+        </el-card>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

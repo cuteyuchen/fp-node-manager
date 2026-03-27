@@ -147,9 +147,9 @@ pub fn set_context_menu(enable: bool, locale: String) -> Result<(), String> {
     let exe_str = exe_path.to_str().ok_or("Invalid path")?;
     
     let menu_text = if locale == "zh" {
-        "在前端项目 & Node 管理器中打开"
+        "在项目管理器中打开"
     } else {
-        "Open in Project & Node Manager"
+        "Open in Project Manager"
     };
     
     let keys = vec![
@@ -188,9 +188,9 @@ pub fn set_context_menu(enable: bool, locale: String) -> Result<(), String> {
     let desktop_file_path = applications_dir.join("fp-node-manager-context.desktop");
 
     let menu_text = if locale == "zh" {
-        "在前端项目 & Node 管理器中打开"
+        "在项目管理器中打开"
     } else {
-        "Open in Project & Node Manager"
+        "Open in Project Manager"
     };
 
     if enable {

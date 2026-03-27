@@ -139,34 +139,30 @@ export class UToolsAdapter implements PlatformAPI {
       ]);
   }
 
-  // Git - Not supported in uTools
-  private gitNotSupported(): never {
-      throw new Error('Git operations are not supported in uTools');
-  }
-
-  async gitCheck(_path: string): Promise<boolean> { return false; }
-  async gitInit(_path: string): Promise<string> { this.gitNotSupported(); }
-  async gitSummary(_path: string): Promise<GitSummary> { this.gitNotSupported(); }
-  async gitStatus(_path: string): Promise<GitStatusResult> { this.gitNotSupported(); }
-  async gitStage(_path: string, _files: string[]): Promise<string> { this.gitNotSupported(); }
-  async gitUnstage(_path: string, _files: string[]): Promise<string> { this.gitNotSupported(); }
-  async gitStageAll(_path: string): Promise<string> { this.gitNotSupported(); }
-  async gitUnstageAll(_path: string): Promise<string> { this.gitNotSupported(); }
-  async gitCommit(_path: string, _message: string): Promise<string> { this.gitNotSupported(); }
-  async gitPull(_path: string, _remote?: string, _branch?: string): Promise<string> { this.gitNotSupported(); }
-  async gitPush(_path: string, _remote?: string, _branch?: string, _force?: boolean, _setUpstream?: boolean): Promise<string> { this.gitNotSupported(); }
-  async gitFetch(_path: string, _remote?: string): Promise<string> { this.gitNotSupported(); }
-  async gitDiff(_path: string, _file?: string, _staged?: boolean): Promise<string> { this.gitNotSupported(); }
-  async gitDiffCommit(_path: string, _hash: string): Promise<string> { this.gitNotSupported(); }
-  async gitDiscard(_path: string, _files: string[]): Promise<string> { this.gitNotSupported(); }
-  async gitDiscardUntracked(_path: string, _files: string[]): Promise<string> { this.gitNotSupported(); }
-  async gitCurrentBranch(_path: string): Promise<string> { this.gitNotSupported(); }
-  async gitListBranches(_path: string): Promise<GitBranch[]> { this.gitNotSupported(); }
-  async gitSwitchBranch(_path: string, _branch: string): Promise<string> { this.gitNotSupported(); }
-  async gitCreateAndSwitchBranch(_path: string, _name: string, _startPoint?: string): Promise<string> { this.gitNotSupported(); }
-  async gitDeleteBranch(_path: string, _name: string, _force?: boolean): Promise<string> { this.gitNotSupported(); }
-  async gitRenameBranch(_path: string, _oldName: string, _newName: string): Promise<string> { this.gitNotSupported(); }
-  async gitHistory(_path: string, _maxCount?: number): Promise<GitCommit[]> { this.gitNotSupported(); }
-  async gitCommitFiles(_path: string, _hash: string): Promise<GitCommitFile[]> { this.gitNotSupported(); }
-  async gitDiffCommitFile(_path: string, _hash: string, _file: string): Promise<string> { this.gitNotSupported(); }
+  // Git
+  async gitCheck(path: string): Promise<boolean> { return this.service.gitCheck(path); }
+  async gitInit(path: string): Promise<string> { return this.service.gitInit(path); }
+  async gitSummary(path: string): Promise<GitSummary> { return this.service.gitSummary(path); }
+  async gitStatus(path: string): Promise<GitStatusResult> { return this.service.gitStatus(path); }
+  async gitStage(path: string, files: string[]): Promise<string> { return this.service.gitStage(path, files); }
+  async gitUnstage(path: string, files: string[]): Promise<string> { return this.service.gitUnstage(path, files); }
+  async gitStageAll(path: string): Promise<string> { return this.service.gitStageAll(path); }
+  async gitUnstageAll(path: string): Promise<string> { return this.service.gitUnstageAll(path); }
+  async gitCommit(path: string, message: string): Promise<string> { return this.service.gitCommit(path, message); }
+  async gitPull(path: string, remote?: string, branch?: string): Promise<string> { return this.service.gitPull(path, remote, branch); }
+  async gitPush(path: string, remote?: string, branch?: string, force?: boolean, setUpstream?: boolean): Promise<string> { return this.service.gitPush(path, remote, branch, force, setUpstream); }
+  async gitFetch(path: string, remote?: string): Promise<string> { return this.service.gitFetch(path, remote); }
+  async gitDiff(path: string, file?: string, staged?: boolean): Promise<string> { return this.service.gitDiff(path, file, staged); }
+  async gitDiffCommit(path: string, hash: string): Promise<string> { return this.service.gitDiffCommit(path, hash); }
+  async gitDiscard(path: string, files: string[]): Promise<string> { return this.service.gitDiscard(path, files); }
+  async gitDiscardUntracked(path: string, files: string[]): Promise<string> { return this.service.gitDiscardUntracked(path, files); }
+  async gitCurrentBranch(path: string): Promise<string> { return this.service.gitCurrentBranch(path); }
+  async gitListBranches(path: string): Promise<GitBranch[]> { return this.service.gitListBranches(path); }
+  async gitSwitchBranch(path: string, branch: string): Promise<string> { return this.service.gitSwitchBranch(path, branch); }
+  async gitCreateAndSwitchBranch(path: string, name: string, startPoint?: string): Promise<string> { return this.service.gitCreateAndSwitchBranch(path, name, startPoint); }
+  async gitDeleteBranch(path: string, name: string, force?: boolean): Promise<string> { return this.service.gitDeleteBranch(path, name, force); }
+  async gitRenameBranch(path: string, oldName: string, newName: string): Promise<string> { return this.service.gitRenameBranch(path, oldName, newName); }
+  async gitHistory(path: string, maxCount?: number): Promise<GitCommit[]> { return this.service.gitHistory(path, maxCount); }
+  async gitCommitFiles(path: string, hash: string): Promise<GitCommitFile[]> { return this.service.gitCommitFiles(path, hash); }
+  async gitDiffCommitFile(path: string, hash: string, file: string): Promise<string> { return this.service.gitDiffCommitFile(path, hash, file); }
 }
